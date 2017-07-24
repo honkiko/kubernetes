@@ -19,12 +19,13 @@ package qcloud
 import (
 	"errors"
 	"fmt"
-	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api/v1"
-	norm "k8s.io/kubernetes/pkg/cloudprovider/providers/qcloud/component"
 	"strconv"
 	"time"
 	"strings"
+	"github.com/golang/glog"
+	"k8s.io/kubernetes/pkg/api/v1"
+	store "cloud.tencent.com/qc_container_cluster/k8s_store"
+	norm "k8s.io/kubernetes/pkg/cloudprovider/providers/qcloud/component"
 )
 
 const (

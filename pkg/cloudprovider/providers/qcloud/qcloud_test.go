@@ -3,34 +3,18 @@ package qcloud
 import (
 	"testing"
 	"fmt"
-	"k8s.io/kubernetes/pkg/cloudprovider"
+	"github.com/dbdd4us/qcloudapi-sdk-go/cvm"
 )
 
-func TestQCloud_CurrentNodeName(t *testing.T) {
-	cloud, err := newQCloud()
+func TestGetInstanceInfoByLanIP(t *testing.T) {
+	client, err := cvm.NewClientFromEnv()
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
-	nodeName, err := cloud.CurrentNodeName("")
+	info, err := getInstanceInfoByLanIP(client, "vpc-b2h3xykt", "192.168.0.109")
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
-	fmt.Printf("currentNodeName: %s\n", nodeName)
-}
 
-func TestQCloud_ExternalID(t *testing.T) {
-	cloud, err := newQCloud()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	name := "10.3.2.15"
-	_, err = cloud.ExternalID(name)
-	if err != cloudprovider.InstanceNotFound {
-		t.Error(err)
-		return
-	}
-	fmt.Print(err)
+	fmt.Printf("info: %v\n", info)
 }
