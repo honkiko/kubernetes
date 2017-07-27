@@ -56,6 +56,7 @@ import (
 	"k8s.io/kubernetes/pkg/volume/scaleio"
 	"k8s.io/kubernetes/pkg/volume/storageos"
 	"k8s.io/kubernetes/pkg/volume/vsphere_volume"
+	"k8s.io/kubernetes/pkg/volume/qcloud_cbs"
 )
 
 // ProbeAttachableVolumePlugins collects all volume plugins for the attach/
@@ -77,6 +78,8 @@ func ProbeAttachableVolumePlugins(config componentconfig.VolumeConfiguration) []
 	allPlugins = append(allPlugins, photon_pd.ProbeVolumePlugins()...)
 	allPlugins = append(allPlugins, scaleio.ProbeVolumePlugins()...)
 	allPlugins = append(allPlugins, storageos.ProbeVolumePlugins()...)
+	allPlugins = append(allPlugins, qcloud_cbs.ProbeVolumePlugins()...)
+
 	return allPlugins
 }
 

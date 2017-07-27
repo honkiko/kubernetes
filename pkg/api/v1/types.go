@@ -351,6 +351,8 @@ type VolumeSource struct {
 	// StorageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.
 	// +optional
 	StorageOS *StorageOSVolumeSource `json:"storageos,omitempty" protobuf:"bytes,27,opt,name=storageos"`
+	//CloudCbs represents a qcloud cbs data disk mount on the host and bind mount to the pod
+	QcloudCbs *QcloudCbsVolumeSource `json:"qcloudCbs,omitempty"`
 }
 
 // PersistentVolumeClaimVolumeSource references the user's PVC in the same namespace.
@@ -449,6 +451,8 @@ type PersistentVolumeSource struct {
 	// More info: https://releases.k8s.io/HEAD/examples/volumes/storageos/README.md
 	// +optional
 	StorageOS *StorageOSPersistentVolumeSource `json:"storageos,omitempty" protobuf:"bytes,21,opt,name=storageos"`
+	//CloudCbs represents a qcloud cbs data disk mount on the host and bind mount to the pod
+	QcloudCbs *QcloudCbsVolumeSource `json:"qcloudCbs,omitempty"`
 }
 
 const (
@@ -1185,6 +1189,21 @@ type AzureDiskVolumeSource struct {
 	// Expected values Shared: mulitple blob disks per storage account  Dedicated: single blob disk per storage account  Managed: azure managed data disk (only in managed availability set). defaults to shared
 	Kind *AzureDataDiskKind `json:"kind,omitempty" protobuf:"bytes,6,opt,name=kind,casttype=AzureDataDiskKind"`
 }
+
+
+type QcloudCbsVolumeSource struct {
+	// Unique id of the persistent disk resource. Used to identify the disk in Qcloud
+	CbsDiskId string `json:"cbsDiskId"`
+	// Filesystem type to mount.
+	// Must be a filesystem type supported by the host operating system.
+	// Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+	// TODO: how do we prevent errors in the filesystem from compromising the machine
+	FSType string `json:"fsType,omitempty"`
+	// Optional: Defaults to false (read/write). ReadOnly here will force
+	// the ReadOnly setting in VolumeMounts.
+	ReadOnly bool `json:"readOnly,omitempty"`
+}
+
 
 // PortworxVolumeSource represents a Portworx volume resource.
 type PortworxVolumeSource struct {
