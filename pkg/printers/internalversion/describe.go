@@ -745,7 +745,7 @@ func describeVolumes(volumes []api.Volume, w PrefixWriter, space string) {
 		case volume.VolumeSource.StorageOS != nil:
 			printStorageOSVolumeSource(volume.VolumeSource.StorageOS, w)
 		case volume.VolumeSource.QcloudCbs != nil:
-			printQcloudCbsVolumeSource(volume.VolumeSource.QcloudCbs, out)
+			printQcloudCbsVolumeSource(volume.VolumeSource.QcloudCbs, w)
 		default:
 			w.Write(LEVEL_1, "<unknown>\n")
 		}
@@ -953,7 +953,6 @@ func printStorageOSVolumeSource(storageos *api.StorageOSVolumeSource, w PrefixWr
 		storageos.VolumeName, storageos.VolumeNamespace, storageos.FSType, storageos.ReadOnly)
 }
 
-
 func printStorageOSPersistentVolumeSource(storageos *api.StorageOSPersistentVolumeSource, w PrefixWriter) {
 	w.Write(LEVEL_2, "Type:\tStorageOS (a StorageOS Persistent Disk resource)\n" +
 		"    VolumeName:\t%v\n" +
@@ -963,10 +962,10 @@ func printStorageOSPersistentVolumeSource(storageos *api.StorageOSPersistentVolu
 		storageos.VolumeName, storageos.VolumeNamespace, storageos.FSType, storageos.ReadOnly)
 }
 
-func printQcloudCbsVolumeSource(d *api.QcloudCbsVolumeSource, out io.Writer) {
-	fmt.Fprintf(out, "    Type:\tQcloudCbs (QCloud cbs disk mount on the host and bind mount to the pod)\n"+
-		"    CbsDiskId:\t%v\n"+
-		"    FSType:\t%v\n"+
+func printQcloudCbsVolumeSource(d *api.QcloudCbsVolumeSource, w PrefixWriter) {
+	w.Write(LEVEL_2, "    Type:\tQcloudCbs (QCloud cbs disk mount on the host and bind mount to the pod)\n" +
+		"    CbsDiskId:\t%v\n" +
+		"    FSType:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		d.CbsDiskId, d.FSType, d.ReadOnly)
 }
@@ -1049,7 +1048,6 @@ func describePersistentVolume(pv *api.PersistentVolume, events *api.EventList) (
 		case pv.Spec.QcloudCbs != nil:
 			printQcloudCbsVolumeSource(pv.Spec.QcloudCbs, w)
 		}
-
 
 		if events != nil {
 			DescribeEvents(events, w)
