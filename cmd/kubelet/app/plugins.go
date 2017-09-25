@@ -59,6 +59,7 @@ import (
 	// Cloud providers
 	_ "k8s.io/kubernetes/pkg/cloudprovider/providers"
 	"k8s.io/kubernetes/pkg/volume/qcloud_cbs"
+	"k8s.io/kubernetes/pkg/volume/qcloud_cbs_dirty"
 )
 
 // ProbeVolumePlugins collects all volume plugins into an easy to use list.
@@ -101,6 +102,7 @@ func ProbeVolumePlugins(pluginDir string) []volume.VolumePlugin {
 	allPlugins = append(allPlugins, local.ProbeVolumePlugins()...)
 	allPlugins = append(allPlugins, storageos.ProbeVolumePlugins()...)
 	allPlugins = append(allPlugins, qcloud_cbs.ProbeVolumePlugins()...)
+	allPlugins = append(allPlugins, qcloud_cbs_dirty.ProbeVolumePlugins()...)
 
 	return allPlugins
 }

@@ -48,7 +48,8 @@ var _ volume.PersistentVolumePlugin = &qcloudDiskPlugin{}
 //var _ volume.ProvisionableVolumePlugin = &qcloudDiskPlugin{}
 
 const (
-	qcloudCbsPluginName = "cloud.tencent.com/qcloud-cbs"
+	//qcloudCbsPluginName = "cloud.tencent.com/qcloud-cbs"
+	qcloudCbsPluginName = "kubernetes.io/qcloud-cbs"
 )
 
 func (plugin *qcloudDiskPlugin) Init(host volume.VolumeHost) error {
