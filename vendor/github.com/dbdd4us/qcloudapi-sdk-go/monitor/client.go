@@ -1,4 +1,4 @@
-package cbs
+package monitor
 
 import (
 	"os"
@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	CbsHost = "cbs.api.qcloud.com"
-	CbsPath = "/v2/index.php"
+	MonitorHost = "monitor.api.qcloud.com"
+	MonitorPath = "/v2/index.php"
 )
 
 type Client struct {
@@ -17,10 +17,10 @@ type Client struct {
 
 func NewClient(credential common.CredentialInterface, opts common.Opts) (*Client, error) {
 	if opts.Host == "" {
-		opts.Host = CbsHost
+		opts.Host = MonitorHost
 	}
 	if opts.Path == "" {
-		opts.Path = CbsPath
+		opts.Path = MonitorPath
 	}
 
 	client, err := common.NewClient(credential, opts)
@@ -34,9 +34,9 @@ func NewClientFromEnv() (*Client, error) {
 
 	secretId := os.Getenv("QCloudSecretId")
 	secretKey := os.Getenv("QCloudSecretKey")
-	region := os.Getenv("QCloudCbsAPIRegion")
-	host := os.Getenv("QCloudCbsAPIHost")
-	path := os.Getenv("QCloudCbsAPIPath")
+	region := os.Getenv("QCloudMonitorAPIRegion")
+	host := os.Getenv("QCloudMonitorAPIHost")
+	path := os.Getenv("QCloudMonitorAPIPath")
 
 	return NewClient(
 		common.Credential{

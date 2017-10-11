@@ -81,7 +81,6 @@ func NewClient(credential CredentialInterface, opts Opts) (*Client, error) {
 	if opts.Logger == nil {
 		opts.Logger = logrus.New()
 	}
-	opts.Logger.SetLevel(logrus.DebugLevel)
 	return &Client{
 		&http.Client{},
 		credential,
@@ -157,9 +156,6 @@ func (client *Client) InvokeWithGET(action string, args interface{}, response in
 	if err != nil {
 		return makeClientError(err)
 	}
-	client.opts.Logger.WithField("Action", action).Infof(
-		"%s %s", secretId, secretKey,
-	)
 
 	signature := client.signGetRequest(secretId, secretKey, &reqValues)
 	reqValues.Set("Signature", signature)
@@ -192,21 +188,30 @@ func (client *Client) InvokeWithGET(action string, args interface{}, response in
 		"%s %s %d %s", "GET", req.URL, resp.StatusCode, body,
 	)
 
-	errorResponse := ErrorResponse{}
+	legacyErrorResponse := LegacyAPIError{}
 
-	if err = json.Unmarshal(body, &errorResponse); err != nil {
+	if err = json.Unmarshal(body, &legacyErrorResponse); err != nil {
 		return makeClientError(err)
 	}
 
-	if (errorResponse.Code != NoErr) || (errorResponse.CodeDesc != "" && errorResponse.CodeDesc != NoErrCodeDesc) {
-		err = Error{
-			ErrorResponse: errorResponse,
-			StatusCode:    resp.StatusCode,
-		}
+	versionErrorResponse := VersionAPIError{}
+
+	if err = json.Unmarshal(body, &versionErrorResponse); err != nil {
+		return makeClientError(err)
+	}
+
+	if legacyErrorResponse.Code != NoErr || (legacyErrorResponse.CodeDesc != "" && legacyErrorResponse.CodeDesc != NoErrCodeDesc) {
 		client.opts.Logger.WithField("Action", action).Errorf(
-			"%s %s %d %s %v", "GET", req.URL, resp.StatusCode, body, err,
+			"%s %s %d %s %v", "GET", req.URL, resp.StatusCode, body, legacyErrorResponse,
 		)
-		return err
+		return legacyErrorResponse
+	}
+
+	if versionErrorResponse.Response.Error.Code != "" {
+		client.opts.Logger.WithField("Action", action).Errorf(
+			"%s %s %d %s %v", "GET", req.URL, resp.StatusCode, body, versionErrorResponse,
+		)
+		return versionErrorResponse
 	}
 
 	if err = json.Unmarshal(body, response); err != nil {
