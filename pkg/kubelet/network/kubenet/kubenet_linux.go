@@ -48,10 +48,13 @@ import (
 	utilexec "k8s.io/kubernetes/pkg/util/exec"
 	utiliptables "k8s.io/kubernetes/pkg/util/iptables"
 	utilsysctl "k8s.io/kubernetes/pkg/util/sysctl"
+
+	"github.com/spf13/pflag"
+	"github.com/janeczku/go-ipset/ipset"
 )
 
 const (
-	BridgeName    = "cbr0"
+	BridgeName = "cbr0"
 	DefaultCNIDir = "/opt/cni/bin"
 
 	sysctlBridgeCallIPTables = "net/bridge/bridge-nf-call-iptables"
@@ -71,35 +74,44 @@ const (
 	// defaultIPAMDir is the default location for the checkpoint files stored by host-local ipam
 	// https://github.com/containernetworking/cni/tree/master/plugins/ipam/host-local#backends
 	defaultIPAMDir = "/var/lib/cni/networks"
+
+	ipSetRuleName = "non-masq-net"
 )
 
 // CNI plugins required by kubenet in /opt/cni/bin or vendor directory
 var requiredCNIPlugins = [...]string{"bridge", "host-local", "loopback"}
 
+var NonMasqueradeCIDRList = []string{}
+
+func init() {
+	fs := pflag.CommandLine
+	fs.StringSliceVar(&NonMasqueradeCIDRList, "non-masquerade-cidr-list", []string{}, "Traffic to IPs outside this range will use IP masquerade")
+}
+
 type kubenetNetworkPlugin struct {
 	network.NoopNetworkPlugin
 
-	host            network.Host
-	netConfig       *libcni.NetworkConfig
-	loConfig        *libcni.NetworkConfig
-	cniConfig       libcni.CNI
-	bandwidthShaper bandwidth.BandwidthShaper
-	mu              sync.Mutex //Mutex for protecting podIPs map, netConfig, and shaper initialization
-	podIPs          map[kubecontainer.ContainerID]string
-	mtu             int
-	execer          utilexec.Interface
-	nsenterPath     string
-	hairpinMode     componentconfig.HairpinMode
-	// kubenet can use either hostportSyncer and hostportManager to implement hostports
-	// Currently, if network host supports legacy features, hostportSyncer will be used,
-	// otherwise, hostportManager will be used.
-	hostportSyncer  hostport.HostportSyncer
-	hostportManager hostport.HostPortManager
-	iptables        utiliptables.Interface
-	sysctl          utilsysctl.Interface
-	ebtables        utilebtables.Interface
-	// vendorDir is passed by kubelet network-plugin-dir parameter.
-	// kubenet will search for cni binaries in DefaultCNIDir first, then continue to vendorDir.
+	host              network.Host
+	netConfig         *libcni.NetworkConfig
+	loConfig          *libcni.NetworkConfig
+	cniConfig         libcni.CNI
+	bandwidthShaper   bandwidth.BandwidthShaper
+	mu                sync.Mutex //Mutex for protecting podIPs map, netConfig, and shaper initialization
+	podIPs            map[kubecontainer.ContainerID]string
+	mtu               int
+	execer            utilexec.Interface
+	nsenterPath       string
+	hairpinMode       componentconfig.HairpinMode
+								 // kubenet can use either hostportSyncer and hostportManager to implement hostports
+								 // Currently, if network host supports legacy features, hostportSyncer will be used,
+								 // otherwise, hostportManager will be used.
+	hostportSyncer    hostport.HostportSyncer
+	hostportManager   hostport.HostPortManager
+	iptables          utiliptables.Interface
+	sysctl            utilsysctl.Interface
+	ebtables          utilebtables.Interface
+								 // vendorDir is passed by kubelet network-plugin-dir parameter.
+								 // kubenet will search for cni binaries in DefaultCNIDir first, then continue to vendorDir.
 	vendorDir         string
 	nonMasqueradeCIDR string
 	podCidr           string
@@ -177,8 +189,17 @@ func (plugin *kubenetNetworkPlugin) Init(host network.Host, hairpinMode componen
 	return nil
 }
 
-// TODO: move thic logic into cni bridge plugin and remove this from kubenet
+
 func (plugin *kubenetNetworkPlugin) ensureMasqRule() error {
+	if len(NonMasqueradeCIDRList) == 0 {
+		return plugin.ensureMasqRuleOld()
+	}
+	return plugin.ensureMasqRuleList()
+
+}
+
+// TODO: move thic logic into cni bridge plugin and remove this from kubenet
+func (plugin *kubenetNetworkPlugin) ensureMasqRuleOld() error {
 	if plugin.nonMasqueradeCIDR != "0.0.0.0/0" {
 		if _, err := plugin.iptables.EnsureRule(utiliptables.Append, utiliptables.TableNAT, utiliptables.ChainPostrouting,
 			"-m", "comment", "--comment", "kubenet: SNAT for outbound traffic from cluster",
@@ -191,6 +212,32 @@ func (plugin *kubenetNetworkPlugin) ensureMasqRule() error {
 	return nil
 }
 
+func (plugin *kubenetNetworkPlugin) ensureMasqRuleList() error {
+
+	nonMasqNet, err := ipset.New(ipSetRuleName, "hash:net", &ipset.Params{})
+	if err != nil {
+		return err
+	}
+
+	err = nonMasqNet.Refresh(NonMasqueradeCIDRList)
+	if err != nil {
+		return err
+	}
+	//iptables -t nat -I POSTROUTING -m set ! --match-set vpc_cidr dst -m comment
+	// --comment "kubenet: SNAT for outbound traffic from cluster" -m addrtype ! --dst-type LOCAL -j MASQUERADE
+
+
+	if _, err := plugin.iptables.EnsureRule(utiliptables.Append, utiliptables.TableNAT, utiliptables.ChainPostrouting,
+		"-m", "comment", "--comment", "kubenet: SNAT for outbound traffic from cluster",
+		"-m", "addrtype", "!", "--dst-type", "LOCAL",
+		"-m", "set", "!", "--match-set", ipSetRuleName, "dst",
+		"-j", "MASQUERADE"); err != nil {
+		return fmt.Errorf("Failed to ensure that %s chain %s jumps to MASQUERADE: %v", utiliptables.TableNAT, utiliptables.ChainPostrouting, err)
+	}
+	return nil
+}
+
+
 func findMinMTU() (*net.Interface, error) {
 	intfs, err := net.Interfaces()
 	if err != nil {
@@ -200,7 +247,7 @@ func findMinMTU() (*net.Interface, error) {
 	mtu := 999999
 	defIntfIndex := -1
 	for i, intf := range intfs {
-		if ((intf.Flags & net.FlagUp) != 0) && (intf.Flags&(net.FlagLoopback|net.FlagPointToPoint) == 0) {
+		if ((intf.Flags & net.FlagUp) != 0) && (intf.Flags & (net.FlagLoopback | net.FlagPointToPoint) == 0) {
 			if intf.MTU < mtu {
 				mtu = intf.MTU
 				defIntfIndex = i

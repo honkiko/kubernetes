@@ -28,6 +28,7 @@ import (
 	_ "k8s.io/kubernetes/pkg/cloudprovider/providers"
 
 	// Volume plugins
+	qcloud "cloud.tencent.com/tencent-cloudprovider/provider"
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/cloudprovider/providers/aws"
@@ -51,6 +52,7 @@ import (
 	"k8s.io/kubernetes/pkg/volume/nfs"
 	"k8s.io/kubernetes/pkg/volume/photon_pd"
 	"k8s.io/kubernetes/pkg/volume/portworx"
+	"k8s.io/kubernetes/pkg/volume/qcloud_cbs"
 	"k8s.io/kubernetes/pkg/volume/quobyte"
 	"k8s.io/kubernetes/pkg/volume/rbd"
 	"k8s.io/kubernetes/pkg/volume/scaleio"
@@ -77,6 +79,8 @@ func ProbeAttachableVolumePlugins(config componentconfig.VolumeConfiguration) []
 	allPlugins = append(allPlugins, photon_pd.ProbeVolumePlugins()...)
 	allPlugins = append(allPlugins, scaleio.ProbeVolumePlugins()...)
 	allPlugins = append(allPlugins, storageos.ProbeVolumePlugins()...)
+	allPlugins = append(allPlugins, qcloud_cbs.ProbeVolumePlugins()...)
+
 	return allPlugins
 }
 
@@ -141,6 +145,8 @@ func ProbeControllerVolumePlugins(cloud cloudprovider.Interface, config componen
 			allPlugins = append(allPlugins, azure_dd.ProbeVolumePlugins()...)
 		case photon.ProviderName == cloud.ProviderName():
 			allPlugins = append(allPlugins, photon_pd.ProbeVolumePlugins()...)
+		case qcloud.ProviderName == cloud.ProviderName():
+			allPlugins = append(allPlugins, qcloud_cbs.ProbeVolumePlugins()...)
 		}
 	}
 
