@@ -2,8 +2,8 @@ package cbs
 
 import (
 	"context"
-	"time"
 	"fmt"
+	"time"
 )
 
 func (client *Client) CreateCbsStorageTask(args *CreateCbsStorageArgs) ([]string, error) {
@@ -12,7 +12,7 @@ func (client *Client) CreateCbsStorageTask(args *CreateCbsStorageArgs) ([]string
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second * 180)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*180)
 	defer cancel()
 	ticker := time.NewTicker(TaskCheckInterval)
 	defer ticker.Stop()

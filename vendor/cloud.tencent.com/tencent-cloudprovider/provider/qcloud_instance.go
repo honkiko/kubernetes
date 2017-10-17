@@ -120,11 +120,21 @@ func (self *QCloud) NodeAddresses(name types.NodeName) ([]v1.NodeAddress, error)
 	if err != nil {
 		return nil, err
 	}
+
 	if ip == string(name) {
 		addresses = append(addresses, v1.NodeAddress{
 			Type:v1.NodeInternalIP, Address:ip,
 		})
+        
+		publicIp, err := self.metaData.PublicIPv4()
+		if  err == nil && len(publicIp) > 0 {
+			addresses = append(addresses, v1.NodeAddress{
+		        Type: v1.NodeExternalIP, Address:publicIp,
+		    })
+		}
+
 		return addresses, nil
+
 	} else {
 		info, err := self.getInstanceInfoByNodeName(string(name))
 		if err != nil {
@@ -133,6 +143,13 @@ func (self *QCloud) NodeAddresses(name types.NodeName) ([]v1.NodeAddress, error)
 		addresses = append(addresses, v1.NodeAddress{
 			Type:v1.NodeInternalIP, Address:info.PrivateIPAddresses[0],
 		})
+        
+		for _, publicIp := range info.PublicIPAddresses {
+			addresses = append(addresses, v1.NodeAddress{
+		        Type: v1.NodeExternalIP, Address: publicIp,
+		    })
+	    }
+
 		return addresses, nil
 	}
 
@@ -205,6 +222,13 @@ func (self *QCloud) NodeAddressesByProviderID(providerID string) ([]v1.NodeAddre
 	addresses = append(addresses, v1.NodeAddress{
 		Type:v1.NodeInternalIP, Address:info.PrivateIPAddresses[0],
 	})
+
+	for _, publicIp := range info.PublicIPAddresses {
+			addresses = append(addresses, v1.NodeAddress{
+		        Type: v1.NodeExternalIP, Address: publicIp,
+		    })
+	}
+
 	return addresses, nil
 }
 

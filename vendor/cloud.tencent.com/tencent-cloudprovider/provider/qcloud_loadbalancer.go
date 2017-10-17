@@ -204,9 +204,8 @@ func (self *QCloud) ensureLBCreate(clusterName string, apiService *v1.Service, h
 
 	//create
 	lbName := apiService.Name
-	cluster_id := annotations[AnnoServiceClusterId]
 	//regularize lb name: ccs_[cluster_id]_[service_name]
-	lbName = fmt.Sprintf("%s_%s", cluster_id, lbName)
+	lbName = fmt.Sprintf("%s_%s", clusterName, lbName)
 
 	if len(lbName) > 50 {
 		lbName = lbName[0:49]

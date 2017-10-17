@@ -10,8 +10,8 @@ const (
 	TaskCheckInterval = time.Second * 1
 
 	TaskSuccceed = 0
-	TaskFailed = 1
-	TaskRunning = 2
+	TaskFailed   = 1
+	TaskRunning  = 2
 
 	TaskStatusUnknown = 9
 )
@@ -78,7 +78,7 @@ func WaitUntilDone(do DoFunc, check Checker, client *Client) error {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second * 600)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*600)
 	defer cancel()
 	return waitStorageUntilDone(ctx, NewStorage(storageId, client), check)
 }
