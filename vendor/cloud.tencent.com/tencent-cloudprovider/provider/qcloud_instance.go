@@ -47,7 +47,7 @@ func (self *QCloud)getInstanceInfoByNodeName(lanIP string) (*cvm.InstanceInfo, e
 			return &instance, nil
 		}
 	}
-	return nil, cloudprovider.InstanceNotFound
+	return nil, fmt.Errorf("cloudprovider.InstanceNotFound")
 }
 
 func (self *QCloud)getInstanceInfoById(instanceId string) (*cvm.InstanceInfo, error) {
@@ -65,12 +65,12 @@ func (self *QCloud)getInstanceInfoById(instanceId string) (*cvm.InstanceInfo, er
 
 	instanceSet := response.InstanceSet
 	if len(instanceSet) == 0 {
-		return nil, cloudprovider.InstanceNotFound
+		return nil, fmt.Errorf("cloudprovider.InstanceNotFound")
 	}
 	if len(instanceSet) > 1 {
 		return nil, fmt.Errorf("multiple instances found for instance: %s", instanceId)
 	}
-	return &instanceSet[0], cloudprovider.InstanceNotFound
+	return &instanceSet[0], fmt.Errorf("cloudprovider.InstanceNotFound")
 }
 
 type kubernetesInstanceID string
