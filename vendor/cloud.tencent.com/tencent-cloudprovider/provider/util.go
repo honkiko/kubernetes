@@ -1,11 +1,11 @@
 package qcloud
 
 import (
-	"time"
-	"github.com/dbdd4us/qcloudapi-sdk-go/clb"
 	"fmt"
+	"github.com/dbdd4us/qcloudapi-sdk-go/clb"
 	"k8s.io/kubernetes/pkg/api/v1"
 	"reflect"
+	"time"
 )
 
 func RetryDo(op func() (interface{}, error), checker func(interface{}, error) bool, timeout uint64, interval uint64) (ret interface{}, err error, isTimeout bool) {
@@ -33,7 +33,7 @@ func RetryDo(op func() (interface{}, error), checker func(interface{}, error) bo
 	return
 }
 
-func convertToLbProtocol(protocol string) (int) {
+func convertToLbProtocol(protocol string) int {
 	switch protocol {
 	case "TCP", "tcp":
 		return clb.LoadBalanceListenerProtocolTCP
@@ -43,7 +43,6 @@ func convertToLbProtocol(protocol string) (int) {
 		return clb.LoadBalanceListenerProtocolTCP
 	}
 }
-
 
 /*notInK8s :to delete from LB */
 /*notInLb: to add to LB*/
@@ -70,10 +69,10 @@ func DiffListerPort(apiService *v1.Service, LBListeners *[]clb.Listener) (UListe
 			//如果service有,但是LB中没有,to add
 			proto := convertToLbProtocol(string(servicePort.Protocol))
 			PortsNotInLb = append(PortsNotInLb, clb.CreateListenerOpts{
-				LoadBalancerPort:        servicePort.Port,
-				InstancePort:        servicePort.NodePort,
-				Protocol:     proto,
-				ListenerName: &servicePort.Name,
+				LoadBalancerPort: servicePort.Port,
+				InstancePort:     servicePort.NodePort,
+				Protocol:         proto,
+				ListenerName:     &servicePort.Name,
 			})
 		} else {
 			if listerInfo.InstancePort != servicePort.NodePort {
@@ -81,10 +80,10 @@ func DiffListerPort(apiService *v1.Service, LBListeners *[]clb.Listener) (UListe
 				UListenerIdNotInK8s = append(UListenerIdNotInK8s, listerInfo.UnListenerId)
 				proto := convertToLbProtocol(string(servicePort.Protocol))
 				PortsNotInLb = append(PortsNotInLb, clb.CreateListenerOpts{
-					LoadBalancerPort:        servicePort.Port,
-					InstancePort:        servicePort.NodePort,
-					Protocol:     proto,
-					ListenerName: &servicePort.Name,
+					LoadBalancerPort: servicePort.Port,
+					InstancePort:     servicePort.NodePort,
+					Protocol:         proto,
+					ListenerName:     &servicePort.Name,
 				})
 
 			}

@@ -27,21 +27,21 @@ import (
 	norm "cloud.tencent.com/tencent-cloudprovider/component"
 	"cloud.tencent.com/tencent-cloudprovider/credential"
 
-	"github.com/dbdd4us/qcloudapi-sdk-go/metadata"
-	"github.com/dbdd4us/qcloudapi-sdk-go/cvm"
-	"github.com/dbdd4us/qcloudapi-sdk-go/clb"
 	"github.com/dbdd4us/qcloudapi-sdk-go/cbs"
+	"github.com/dbdd4us/qcloudapi-sdk-go/clb"
+	"github.com/dbdd4us/qcloudapi-sdk-go/cvm"
 	"github.com/dbdd4us/qcloudapi-sdk-go/snap"
 
 	"github.com/dbdd4us/qcloudapi-sdk-go/common"
 
 	"encoding/json"
+	"errors"
 	"time"
 )
 
 const (
-	ProviderName = "qcloud"
-	AnnoServiceLBInternalSubnetID = "service.kubernetes.io/qcloud-loadbalancer-internal"
+	ProviderName                      = "qcloud"
+	AnnoServiceLBInternalSubnetID     = "service.kubernetes.io/qcloud-loadbalancer-internal"
 	AnnoServiceLBInternalUniqSubnetID = "service.kubernetes.io/qcloud-loadbalancer-internal-subnetid"
 
 	AnnoServiceClusterId = "service.kubernetes.io/qcloud-loadbalancer-clusterid"
@@ -50,29 +50,31 @@ const (
 //TODO instance cache
 type QCloud struct {
 	currentInstanceInfo *norm.NormGetNodeInfoRsp
-	metaData            *metadata.MetaData
+	metaData            *metaDataCached
 	cvm                 *cvm.Client
 	clb                 *clb.Client
 	cbs                 *cbs.Client
 	snap                *snap.Client
 
-	Config              *Config
-	//slefNodeName        types.NodeName
-	//selfInstanceInfo    *cvm.InstanceInfo
+	Config           *Config
+	selfInstanceInfo *cvm.InstanceInfo
 }
 
 type Config struct {
-	Region          string `json:"region"`
-	Zone            string `json:"zone"`
-	VpcId           string `json:"vpcId"`
+	Region string `json:"region"`
+	Zone   string `json:"zone"`
+	VpcId  string `json:"vpcId"`
 
 	QCloudSecretId  string `json:"QCloudSecretId"`
 	QCloudSecretKey string `json:"QCloudSecretKey"`
 
-	Kubeconfig      string `json:"kubeconfig"`
+	Kubeconfig string `json:"kubeconfig"`
 }
 
-var config Config
+var (
+	config                 Config
+	QcloudInstanceNotFound = errors.New("qcloud instance not found")
+)
 
 func readConfig(cfg io.Reader) error {
 	if cfg == nil {
@@ -109,8 +111,8 @@ func newQCloud() (*QCloud, error) {
 
 	} else {
 		cred = common.Credential{
-			SecretId:config.QCloudSecretId,
-			SecretKey:config.QCloudSecretKey,
+			SecretId:  config.QCloudSecretId,
+			SecretKey: config.QCloudSecretKey,
 		}
 	}
 
@@ -118,7 +120,7 @@ func newQCloud() (*QCloud, error) {
 		cred,
 		common.Opts{
 			Region: config.Region,
-		}, )
+		})
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +130,7 @@ func newQCloud() (*QCloud, error) {
 		cred,
 		common.Opts{
 			Region: config.Region,
-		}, )
+		})
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +139,7 @@ func newQCloud() (*QCloud, error) {
 		cred,
 		common.Opts{
 			Region: config.Region,
-		}, )
+		})
 	if err != nil {
 		return nil, err
 	}
@@ -146,18 +148,18 @@ func newQCloud() (*QCloud, error) {
 		cred,
 		common.Opts{
 			Region: config.Region,
-		}, )
+		})
 	if err != nil {
 		return nil, err
 	}
 
 	cloud := &QCloud{
-		Config:&config,
-		metaData:metadata.NewMetaData(nil),
-		cvm:cvmClient,
-		clb:clbClient,
-		cbs:cbsClient,
-		snap:snapClient,
+		Config:   &config,
+		metaData: newMetaDataCached(),
+		cvm:      cvmClient,
+		clb:      clbClient,
+		cbs:      cbsClient,
+		snap:     snapClient,
 	}
 
 	return cloud, nil

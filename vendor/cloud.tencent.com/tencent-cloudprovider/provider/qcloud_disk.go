@@ -18,10 +18,9 @@ package qcloud
 
 import (
 	"fmt"
+	"github.com/dbdd4us/qcloudapi-sdk-go/cbs"
 	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/types"
-	"github.com/dbdd4us/qcloudapi-sdk-go/cbs"
-	"k8s.io/kubernetes/pkg/cloudprovider"
 )
 
 type Disks interface {
@@ -59,14 +58,14 @@ func (qcloud *QCloud) CreateDisk(diskType string, sizeGb int, zone string) (stri
 	var createType string
 	var size int
 
-	switch diskType{
+	switch diskType {
 	case cbs.StorageTypeCloudBasic, cbs.StorageTypeCloudPremium, cbs.StorageTypeCloudSSD:
 		createType = diskType
 	default:
 		createType = cbs.StorageTypeCloudBasic
 	}
 
-	if sizeGb == sizeGb / 10 * 10 {
+	if sizeGb == sizeGb/10*10 {
 		size = sizeGb
 	} else {
 		size = ((sizeGb / 10) + 1) * 10
@@ -85,12 +84,12 @@ func (qcloud *QCloud) CreateDisk(diskType string, sizeGb int, zone string) (stri
 	}
 
 	args := &cbs.CreateCbsStorageArgs{
-		StorageType:createType,
-		StorageSize:size,
-		PayMode:cbs.PayModePrePay,
-		Period:1,
-		GoodsNum:1,
-		Zone:zone,
+		StorageType: createType,
+		StorageSize: size,
+		PayMode:     cbs.PayModePrePay,
+		Period:      1,
+		GoodsNum:    1,
+		Zone:        zone,
 	}
 
 	storageIds, err := qcloud.cbs.CreateCbsStorageTask(args)
@@ -105,7 +104,7 @@ func (qcloud *QCloud) CreateDisk(diskType string, sizeGb int, zone string) (stri
 
 }
 
-func (qcloud *QCloud) ModifyDiskName(diskId string, name string) (error) {
+func (qcloud *QCloud) ModifyDiskName(diskId string, name string) error {
 
 	_, err := qcloud.cbs.ModifyCbsStorageAttribute(diskId, name)
 	if err != nil {
@@ -115,7 +114,7 @@ func (qcloud *QCloud) ModifyDiskName(diskId string, name string) (error) {
 
 }
 
-func (qcloud *QCloud) BindDiskToAsp(diskId string, aspId string) (error) {
+func (qcloud *QCloud) BindDiskToAsp(diskId string, aspId string) error {
 
 	_, err := qcloud.snap.BindAutoSnapshotPolicy(aspId, []string{diskId})
 	if err != nil {
@@ -128,7 +127,7 @@ func (qcloud *QCloud) BindDiskToAsp(diskId string, aspId string) (error) {
 func (qcloud *QCloud) GetDiskInfo(diskId string) (*cbs.StorageSet, error) {
 
 	rsp, err := qcloud.cbs.DescribeCbsStorage(&cbs.DescribeCbsStorageArgs{
-		StorageIds:&[]string{diskId},
+		StorageIds: &[]string{diskId},
 	})
 	if err != nil {
 		glog.Errorf("DescribeCbsStorage failed,diskId:%s,error:%v", diskId, err)
@@ -184,7 +183,7 @@ func (qcloud *QCloud) DiskIsAttached(diskId string, nodename types.NodeName) (bo
 
 	instanceInfo, err := qcloud.getInstanceInfoByNodeName(nodeName)
 	if err != nil {
-		if err == cloudprovider.InstanceNotFound {
+		if err == QcloudInstanceNotFound {
 			// If instance no longer exists, safe to assume volume is not attached.
 			glog.Warningf(
 				"Instance %q does not exist. DiskIsAttached will assume disk %q is not attached to it.",
@@ -212,7 +211,7 @@ func (qcloud *QCloud) DisksAreAttached(diskIds []string, nodename types.NodeName
 
 	instanceInfo, err := qcloud.getInstanceInfoByNodeName(nodeName)
 	if err != nil {
-		if err == cloudprovider.InstanceNotFound {
+		if err == QcloudInstanceNotFound {
 			glog.Warningf("DiskAreAttached, node is not found, assume disks are not attched to the node:%s",
 				nodeName)
 			return attached, nil

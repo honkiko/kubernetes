@@ -17,27 +17,27 @@ limitations under the License.
 package qcloud
 
 import (
+	norm "cloud.tencent.com/tencent-cloudprovider/component"
 	"errors"
 	"fmt"
-	"strconv"
-	"time"
-	"strings"
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/cloudprovider"
-	norm "cloud.tencent.com/tencent-cloudprovider/component"
+	"strconv"
+	"strings"
+	"time"
 )
 
 const (
-	QUERY_LIMIT = 10
-	QUERY_PERIOD = 3
-	DONE_MAGIC_NUM = 5
-	STATUS_TASK_SUCC = 0
-	STATUS_TASK_FAIL = 1
+	QUERY_LIMIT       = 10
+	QUERY_PERIOD      = 3
+	DONE_MAGIC_NUM    = 5
+	STATUS_TASK_SUCC  = 0
+	STATUS_TASK_FAIL  = 1
 	STATUS_TASK_GOING = 2
 
 	LB_CREATE_TYPE_INTERNAL = "internal"
-	LB_CREATE_TYPE_OPEN = "open"
+	LB_CREATE_TYPE_OPEN     = "open"
 )
 
 //有订单还未发货,发货中以及LB正常状态都应该返回exists;没有订单且LB不存在时才返回notxists
@@ -176,7 +176,7 @@ func (self *QCloud) ensureLBCreate(clusterName string, apiService *v1.Service, h
 	uniqSubnetId, hasUniqSubnetId := annotations[AnnoServiceLBInternalUniqSubnetID]
 	iSubnetId, hasSubnetId := annotations[AnnoServiceLBInternalSubnetID]
 	var subnetId int
-	if (hasSubnetId && len(iSubnetId) > 0) {
+	if hasSubnetId && len(iSubnetId) > 0 {
 		subnetId, err = getSubnetIdInt(iSubnetId)
 		if err != nil {
 			return err
@@ -200,7 +200,6 @@ func (self *QCloud) ensureLBCreate(clusterName string, apiService *v1.Service, h
 			return err
 		}
 	}
-
 
 	//create
 	lbName := apiService.Name
@@ -310,7 +309,7 @@ func (self *QCloud) ensureLoadBalancer(clusterName string, apiService *v1.Servic
 }
 
 func nodesToStrings(hosts []*v1.Node) []string {
-	var hs  []string
+	var hs []string
 	for _, h := range hosts {
 		hs = append(hs, h.Name)
 	}
@@ -511,9 +510,10 @@ func (self *QCloud) EnsureLoadBalancerDeleted(clusterName string, apiService *v1
 		//polling...
 		if err != nil || !isTaskDone(tskId) {
 			msg := fmt.Sprintf("DeleteLB(%s) from LB failed!err:%s", ULBId, func(e error) string {
-				if (e != nil) {
+				if e != nil {
 					return e.Error()
-				}; return "queryTaskFailed"
+				}
+				return "queryTaskFailed"
 			}(err))
 			glog.Errorf(msg)
 			return errors.New(msg)
