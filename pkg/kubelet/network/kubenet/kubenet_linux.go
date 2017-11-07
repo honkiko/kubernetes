@@ -516,7 +516,7 @@ func (plugin *kubenetNetworkPlugin) SetUpPod(namespace string, name string, id k
 func (plugin *kubenetNetworkPlugin) teardown(namespace string, name string, id kubecontainer.ContainerID, podIP string) error {
 	errList := []error{}
 
-	if podIP != "" {
+	if podIP != "" && plugin.bandwidthShaper != nil {
 		glog.V(5).Infof("Removing pod IP %s from shaper", podIP)
 		// shaper wants /32
 		if err := plugin.shaper().Reset(fmt.Sprintf("%s/32", podIP)); err != nil {
