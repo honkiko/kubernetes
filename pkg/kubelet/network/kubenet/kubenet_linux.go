@@ -189,7 +189,6 @@ func (plugin *kubenetNetworkPlugin) Init(host network.Host, hairpinMode componen
 	return nil
 }
 
-
 func (plugin *kubenetNetworkPlugin) ensureMasqRule() error {
 	if len(NonMasqueradeCIDRList) == 0 {
 		return plugin.ensureMasqRuleOld()
@@ -236,7 +235,6 @@ func (plugin *kubenetNetworkPlugin) ensureMasqRuleList() error {
 	}
 	return nil
 }
-
 
 func findMinMTU() (*net.Interface, error) {
 	intfs, err := net.Interfaces()
@@ -416,12 +414,12 @@ func (plugin *kubenetNetworkPlugin) setup(namespace string, name string, id kube
 
 	// The first SetUpPod call creates the bridge; get a shaper for the sake of initialization
 	// TODO: replace with CNI traffic shaper plugin
-	shaper := plugin.shaper()
 	ingress, egress, err := bandwidth.ExtractPodBandwidthResources(annotations)
 	if err != nil {
 		return fmt.Errorf("Error reading pod bandwidth annotations: %v", err)
 	}
 	if egress != nil || ingress != nil {
+		shaper := plugin.shaper()
 		if err := shaper.ReconcileCIDR(fmt.Sprintf("%s/32", ip4.String()), egress, ingress); err != nil {
 			return fmt.Errorf("Failed to add pod to shaper: %v", err)
 		}
