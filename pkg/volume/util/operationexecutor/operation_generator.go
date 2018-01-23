@@ -36,6 +36,7 @@ import (
 	"k8s.io/kubernetes/pkg/volume"
 	"k8s.io/kubernetes/pkg/volume/util"
 	"k8s.io/kubernetes/pkg/volume/util/volumehelper"
+	"strings"
 )
 
 var _ OperationGenerator = &operationGenerator{}
@@ -506,8 +507,15 @@ func (og *operationGenerator) GenerateUnmountVolumeFunc(
 	actualStateOfWorld ActualStateOfWorldMounterUpdater,
 	podsDir string) (func() error, string, error) {
 	// Get mountable plugin
-	volumePlugin, err :=
-		og.volumePluginMgr.FindPluginByName(volumeToUnmount.PluginName)
+	pluginName := ""
+	if strings.Contains(string(volumeToUnmount.VolumeName), "cloud.tencent.com/qcloud-cbs") {
+		pluginName = "cloud.tencent.com/qcloud-cbs"
+	} else {
+		pluginName = volumeToUnmount.PluginName
+	}
+
+ 	volumePlugin, err :=
+		og.volumePluginMgr.FindPluginByName(pluginName)
 	if err != nil || volumePlugin == nil {
 		return nil, "", volumeToUnmount.GenerateErrorDetailed("UnmountVolume.FindPluginByName failed", err)
 	}
@@ -584,13 +592,24 @@ func (og *operationGenerator) GenerateUnmountDeviceFunc(
 			// On failure, return error. Caller will log and retry.
 			return deviceToDetach.GenerateErrorDetailed("GetDeviceMountPath failed", err)
 		}
-		refs, err := attachableVolumePlugin.GetDeviceMountRefs(deviceMountPath)
 
-		if err != nil || hasMountRefs(deviceMountPath, refs) {
-			if err == nil {
-				err = fmt.Errorf("The device mount path %q is still mounted by other references %v", deviceMountPath, refs)
-			}
+		refs, err := attachableVolumePlugin.GetDeviceMountRefs(deviceMountPath)
+		//!strings.Contains(attachableVolumePlugin.GetPluginName(), "qcloud-cbs")
+
+		if err != nil {
 			return deviceToDetach.GenerateErrorDetailed("GetDeviceMountRefs check failed", err)
+		}
+		if !strings.Contains(attachableVolumePlugin.GetPluginName(), "qcloud-cbs") && hasMountRefs(deviceMountPath, refs) {
+			return deviceToDetach.GenerateErrorDetailed("GetDeviceMountRefs check failed", fmt.Errorf("The device mount path %q is still mounted by other references %v", deviceMountPath, refs))
+
+		}
+
+		for _, ref := range refs {
+			unmountDeviceErr := volumeDetacher.UnmountDevice(ref)
+			if unmountDeviceErr != nil {
+				// On failure, return error. Caller will log and retry.
+				return deviceToDetach.GenerateErrorDetailed("UnmountDevice failed", unmountDeviceErr)
+			}
 		}
 		// Execute unmount
 		unmountDeviceErr := volumeDetacher.UnmountDevice(deviceMountPath)

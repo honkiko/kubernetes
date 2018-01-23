@@ -316,6 +316,8 @@ type VolumeSource struct {
 	// StorageOS represents a StorageOS volume that is attached to the kubelet's host machine and mounted into the pod
 	// +optional
 	StorageOS *StorageOSVolumeSource
+	//CloudCbs represents a qcloud cbs data disk mount on the host and bind mount to the pod
+	QcloudCbs *QcloudCbsVolumeSource
 }
 
 // Similar to VolumeSource but meant for the administrator who creates PVs.
@@ -391,6 +393,8 @@ type PersistentVolumeSource struct {
 	// More info: https://releases.k8s.io/HEAD/examples/volumes/storageos/README.md
 	// +optional
 	StorageOS *StorageOSPersistentVolumeSource
+	//CloudCbs represents a qcloud cbs data disk mount on the host and bind mount to the pod
+	QcloudCbs *QcloudCbsVolumeSource
 }
 
 type PersistentVolumeClaimVolumeSource struct {
@@ -1367,6 +1371,19 @@ type StorageOSPersistentVolumeSource struct {
 	// credentials.  If not specified, default values will be attempted.
 	// +optional
 	SecretRef *ObjectReference
+}
+
+type QcloudCbsVolumeSource struct {
+	// Unique id of the persistent disk resource. Used to identify the disk in Qcloud
+	CbsDiskId string
+	// Filesystem type to mount.
+	// Must be a filesystem type supported by the host operating system.
+	// Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+	// TODO: how do we prevent errors in the filesystem from compromising the machine
+	FSType string
+	// Optional: Defaults to false (read/write). ReadOnly here will force
+	// the ReadOnly setting in VolumeMounts.
+	ReadOnly bool
 }
 
 // Adapts a ConfigMap into a volume.

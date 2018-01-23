@@ -2352,6 +2352,8 @@ message PersistentVolumeSource {
   // More info: https://releases.k8s.io/HEAD/examples/volumes/storageos/README.md
   // +optional
   optional StorageOSPersistentVolumeSource storageos = 21;
+
+  optional QcloudCbsVolumeSource qcloudCbs = 22;
 }
 
 // PersistentVolumeSpec is the specification of a persistent volume.
@@ -3128,6 +3130,21 @@ message ProjectedVolumeSource {
   // mode, like fsGroup, and the result can be other mode bits set.
   // +optional
   optional int32 defaultMode = 2;
+}
+
+message QcloudCbsVolumeSource {
+  // Unique id of the persistent disk resource. Used to identify the disk in Qcloud
+  optional string cbsDiskId = 1;
+
+  // Filesystem type to mount.
+  // Must be a filesystem type supported by the host operating system.
+  // Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+  // TODO: how do we prevent errors in the filesystem from compromising the machine
+  optional string fsType = 2;
+
+  // Optional: Defaults to false (read/write). ReadOnly here will force
+  // the ReadOnly setting in VolumeMounts.
+  optional bool readOnly = 3;
 }
 
 // Represents a Quobyte mount that lasts the lifetime of a pod.
@@ -4303,6 +4320,8 @@ message VolumeSource {
   // StorageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.
   // +optional
   optional StorageOSVolumeSource storageos = 27;
+
+  optional QcloudCbsVolumeSource qcloudCbs = 28;
 }
 
 // Represents a vSphere volume resource.

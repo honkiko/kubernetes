@@ -601,3 +601,10 @@ else
 bazel-release:
 	bazel build //build/release-tars
 endif
+
+
+.PHONY: sync
+sync:
+	mkdir -p vendor/cloud.tencent.com vendor/github.com/dbdd4us
+	rsync --exclude=.git --exclude=.DS_Store -a --delete ../../cloud.tencent.com/tencent-cloudprovider vendor/cloud.tencent.com/
+	rsync --exclude=.git --exclude=.DS_Store -a --delete ../../github.com/dbdd4us/qcloudapi-sdk-go vendor/github.com/dbdd4us/

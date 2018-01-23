@@ -111,7 +111,7 @@ func (pw *prefixWriter) Write(level int, format string, a ...interface{}) {
 	for i := 0; i < level; i++ {
 		prefix += levelSpace
 	}
-	fmt.Fprintf(pw.out, prefix+format, a...)
+	fmt.Fprintf(pw.out, prefix + format, a...)
 }
 
 func (pw *prefixWriter) WriteLine(a ...interface{}) {
@@ -244,7 +244,7 @@ func printUnstructuredContent(w PrefixWriter, level int, content map[string]inte
 				continue
 			}
 			w.Write(level, "%s:\n", smartLabelFor(field))
-			printUnstructuredContent(w, level+1, typedValue, skipExpr, skip...)
+			printUnstructuredContent(w, level + 1, typedValue, skipExpr, skip...)
 
 		case []interface{}:
 			skipExpr := fmt.Sprintf("%s.%s", skipPrefix, field)
@@ -255,9 +255,9 @@ func printUnstructuredContent(w PrefixWriter, level int, content map[string]inte
 			for _, child := range typedValue {
 				switch typedChild := child.(type) {
 				case map[string]interface{}:
-					printUnstructuredContent(w, level+1, typedChild, skipExpr, skip...)
+					printUnstructuredContent(w, level + 1, typedChild, skipExpr, skip...)
 				default:
-					w.Write(level+1, "%v\n", typedChild)
+					w.Write(level + 1, "%v\n", typedChild)
 				}
 			}
 
@@ -626,7 +626,7 @@ func describePod(pod *api.Pod, events *api.EventList) (string, error) {
 		if pod.Spec.NodeName == "" {
 			w.Write(LEVEL_0, "Node:\t<none>\n")
 		} else {
-			w.Write(LEVEL_0, "Node:\t%s\n", pod.Spec.NodeName+"/"+pod.Status.HostIP)
+			w.Write(LEVEL_0, "Node:\t%s\n", pod.Spec.NodeName + "/" + pod.Status.HostIP)
 		}
 		if pod.Status.StartTime != nil {
 			w.Write(LEVEL_0, "Start Time:\t%s\n", pod.Status.StartTime.Time.Format(time.RFC1123Z))
@@ -764,6 +764,9 @@ func describeVolumes(volumes []api.Volume, w PrefixWriter, space string) {
 			printFlexVolumeSource(volume.VolumeSource.FlexVolume, w)
 		case volume.VolumeSource.Flocker != nil:
 			printFlockerVolumeSource(volume.VolumeSource.Flocker, w)
+		case volume.VolumeSource.QcloudCbs != nil:
+			printQcloudCbsVolumeSource(volume.VolumeSource.QcloudCbs, w)
+
 		default:
 			w.Write(LEVEL_1, "<unknown>\n")
 		}
@@ -771,74 +774,74 @@ func describeVolumes(volumes []api.Volume, w PrefixWriter, space string) {
 }
 
 func printHostPathVolumeSource(hostPath *api.HostPathVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tHostPath (bare host directory volume)\n"+
+	w.Write(LEVEL_2, "Type:\tHostPath (bare host directory volume)\n" +
 		"    Path:\t%v\n", hostPath.Path)
 }
 
 func printEmptyDirVolumeSource(emptyDir *api.EmptyDirVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tEmptyDir (a temporary directory that shares a pod's lifetime)\n"+
+	w.Write(LEVEL_2, "Type:\tEmptyDir (a temporary directory that shares a pod's lifetime)\n" +
 		"    Medium:\t%v\n", emptyDir.Medium)
 }
 
 func printGCEPersistentDiskVolumeSource(gce *api.GCEPersistentDiskVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tGCEPersistentDisk (a Persistent Disk resource in Google Compute Engine)\n"+
-		"    PDName:\t%v\n"+
-		"    FSType:\t%v\n"+
-		"    Partition:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tGCEPersistentDisk (a Persistent Disk resource in Google Compute Engine)\n" +
+		"    PDName:\t%v\n" +
+		"    FSType:\t%v\n" +
+		"    Partition:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		gce.PDName, gce.FSType, gce.Partition, gce.ReadOnly)
 }
 
 func printAWSElasticBlockStoreVolumeSource(aws *api.AWSElasticBlockStoreVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tAWSElasticBlockStore (a Persistent Disk resource in AWS)\n"+
-		"    VolumeID:\t%v\n"+
-		"    FSType:\t%v\n"+
-		"    Partition:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tAWSElasticBlockStore (a Persistent Disk resource in AWS)\n" +
+		"    VolumeID:\t%v\n" +
+		"    FSType:\t%v\n" +
+		"    Partition:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		aws.VolumeID, aws.FSType, aws.Partition, aws.ReadOnly)
 }
 
 func printGitRepoVolumeSource(git *api.GitRepoVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tGitRepo (a volume that is pulled from git when the pod is created)\n"+
-		"    Repository:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tGitRepo (a volume that is pulled from git when the pod is created)\n" +
+		"    Repository:\t%v\n" +
 		"    Revision:\t%v\n",
 		git.Repository, git.Revision)
 }
 
 func printSecretVolumeSource(secret *api.SecretVolumeSource, w PrefixWriter) {
 	optional := secret.Optional != nil && *secret.Optional
-	w.Write(LEVEL_2, "Type:\tSecret (a volume populated by a Secret)\n"+
-		"    SecretName:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tSecret (a volume populated by a Secret)\n" +
+		"    SecretName:\t%v\n" +
 		"    Optional:\t%v\n",
 		secret.SecretName, optional)
 }
 
 func printConfigMapVolumeSource(configMap *api.ConfigMapVolumeSource, w PrefixWriter) {
 	optional := configMap.Optional != nil && *configMap.Optional
-	w.Write(LEVEL_2, "Type:\tConfigMap (a volume populated by a ConfigMap)\n"+
-		"    Name:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tConfigMap (a volume populated by a ConfigMap)\n" +
+		"    Name:\t%v\n" +
 		"    Optional:\t%v\n",
 		configMap.Name, optional)
 }
 
 func printNFSVolumeSource(nfs *api.NFSVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tNFS (an NFS mount that lasts the lifetime of a pod)\n"+
-		"    Server:\t%v\n"+
-		"    Path:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tNFS (an NFS mount that lasts the lifetime of a pod)\n" +
+		"    Server:\t%v\n" +
+		"    Path:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		nfs.Server, nfs.Path, nfs.ReadOnly)
 }
 
 func printQuobyteVolumeSource(quobyte *api.QuobyteVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tQuobyte (a Quobyte mount on the host that shares a pod's lifetime)\n"+
-		"    Registry:\t%v\n"+
-		"    Volume:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tQuobyte (a Quobyte mount on the host that shares a pod's lifetime)\n" +
+		"    Registry:\t%v\n" +
+		"    Volume:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		quobyte.Registry, quobyte.Volume, quobyte.ReadOnly)
 }
 
 func printPortworxVolumeSource(pwxVolume *api.PortworxVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tPortworxVolume (a Portworx Volume resource)\n"+
+	w.Write(LEVEL_2, "Type:\tPortworxVolume (a Portworx Volume resource)\n" +
 		"    VolumeID:\t%v\n",
 		pwxVolume.VolumeID)
 }
@@ -848,45 +851,45 @@ func printISCSIVolumeSource(iscsi *api.ISCSIVolumeSource, w PrefixWriter) {
 	if iscsi.InitiatorName != nil {
 		initiator = *iscsi.InitiatorName
 	}
-	w.Write(LEVEL_2, "Type:\tISCSI (an ISCSI Disk resource that is attached to a kubelet's host machine and then exposed to the pod)\n"+
-		"    TargetPortal:\t%v\n"+
-		"    IQN:\t%v\n"+
-		"    Lun:\t%v\n"+
-		"    ISCSIInterface\t%v\n"+
-		"    FSType:\t%v\n"+
-		"    ReadOnly:\t%v\n"+
-		"    Portals:\t%v\n"+
-		"    DiscoveryCHAPAuth:\t%v\n"+
-		"    SessionCHAPAuth:\t%v\n"+
-		"    SecretRef:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tISCSI (an ISCSI Disk resource that is attached to a kubelet's host machine and then exposed to the pod)\n" +
+		"    TargetPortal:\t%v\n" +
+		"    IQN:\t%v\n" +
+		"    Lun:\t%v\n" +
+		"    ISCSIInterface\t%v\n" +
+		"    FSType:\t%v\n" +
+		"    ReadOnly:\t%v\n" +
+		"    Portals:\t%v\n" +
+		"    DiscoveryCHAPAuth:\t%v\n" +
+		"    SessionCHAPAuth:\t%v\n" +
+		"    SecretRef:\t%v\n" +
 		"    InitiatorName:\t%v\n",
 		iscsi.TargetPortal, iscsi.IQN, iscsi.Lun, iscsi.ISCSIInterface, iscsi.FSType, iscsi.ReadOnly, iscsi.Portals, iscsi.DiscoveryCHAPAuth, iscsi.SessionCHAPAuth, iscsi.SecretRef, initiator)
 }
 
 func printGlusterfsVolumeSource(glusterfs *api.GlusterfsVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tGlusterfs (a Glusterfs mount on the host that shares a pod's lifetime)\n"+
-		"    EndpointsName:\t%v\n"+
-		"    Path:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tGlusterfs (a Glusterfs mount on the host that shares a pod's lifetime)\n" +
+		"    EndpointsName:\t%v\n" +
+		"    Path:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		glusterfs.EndpointsName, glusterfs.Path, glusterfs.ReadOnly)
 }
 
 func printPersistentVolumeClaimVolumeSource(claim *api.PersistentVolumeClaimVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tPersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)\n"+
-		"    ClaimName:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tPersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)\n" +
+		"    ClaimName:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		claim.ClaimName, claim.ReadOnly)
 }
 
 func printRBDVolumeSource(rbd *api.RBDVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tRBD (a Rados Block Device mount on the host that shares a pod's lifetime)\n"+
-		"    CephMonitors:\t%v\n"+
-		"    RBDImage:\t%v\n"+
-		"    FSType:\t%v\n"+
-		"    RBDPool:\t%v\n"+
-		"    RadosUser:\t%v\n"+
-		"    Keyring:\t%v\n"+
-		"    SecretRef:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tRBD (a Rados Block Device mount on the host that shares a pod's lifetime)\n" +
+		"    CephMonitors:\t%v\n" +
+		"    RBDImage:\t%v\n" +
+		"    FSType:\t%v\n" +
+		"    RBDPool:\t%v\n" +
+		"    RadosUser:\t%v\n" +
+		"    Keyring:\t%v\n" +
+		"    SecretRef:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		rbd.CephMonitors, rbd.RBDImage, rbd.FSType, rbd.RBDPool, rbd.RadosUser, rbd.Keyring, rbd.SecretRef, rbd.ReadOnly)
 }
@@ -904,48 +907,48 @@ func printDownwardAPIVolumeSource(d *api.DownwardAPIVolumeSource, w PrefixWriter
 }
 
 func printAzureDiskVolumeSource(d *api.AzureDiskVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tAzureDisk (an Azure Data Disk mount on the host and bind mount to the pod)\n"+
-		"    DiskName:\t%v\n"+
-		"    DiskURI:\t%v\n"+
-		"    Kind: \t%v\n"+
-		"    FSType:\t%v\n"+
-		"    CachingMode:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tAzureDisk (an Azure Data Disk mount on the host and bind mount to the pod)\n" +
+		"    DiskName:\t%v\n" +
+		"    DiskURI:\t%v\n" +
+		"    Kind: \t%v\n" +
+		"    FSType:\t%v\n" +
+		"    CachingMode:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		d.DiskName, d.DataDiskURI, *d.Kind, *d.FSType, *d.CachingMode, *d.ReadOnly)
 }
 
 func printVsphereVolumeSource(vsphere *api.VsphereVirtualDiskVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tvSphereVolume (a Persistent Disk resource in vSphere)\n"+
-		"    VolumePath:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tvSphereVolume (a Persistent Disk resource in vSphere)\n" +
+		"    VolumePath:\t%v\n" +
 		"    FSType:\t%v\n",
 		"    StoragePolicyName:\t%v\n",
 		vsphere.VolumePath, vsphere.FSType, vsphere.StoragePolicyName)
 }
 
 func printPhotonPersistentDiskVolumeSource(photon *api.PhotonPersistentDiskVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tPhotonPersistentDisk (a Persistent Disk resource in photon platform)\n"+
-		"    PdID:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tPhotonPersistentDisk (a Persistent Disk resource in photon platform)\n" +
+		"    PdID:\t%v\n" +
 		"    FSType:\t%v\n",
 		photon.PdID, photon.FSType)
 }
 
 func printCinderVolumeSource(cinder *api.CinderVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tCinder (a Persistent Disk resource in OpenStack)\n"+
-		"    VolumeID:\t%v\n"+
-		"    FSType:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tCinder (a Persistent Disk resource in OpenStack)\n" +
+		"    VolumeID:\t%v\n" +
+		"    FSType:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		cinder.VolumeID, cinder.FSType, cinder.ReadOnly)
 }
 
 func printScaleIOVolumeSource(sio *api.ScaleIOVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tScaleIO (a persistent volume backed by a block device in ScaleIO)\n"+
-		"    Gateway:\t%v\n"+
-		"    System:\t%v\n"+
-		"    Protection Domain:\t%v\n"+
-		"    Storage Pool:\t%v\n"+
-		"    Storage Mode:\t%v\n"+
-		"    VolumeName:\t%v\n"+
-		"    FSType:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tScaleIO (a persistent volume backed by a block device in ScaleIO)\n" +
+		"    Gateway:\t%v\n" +
+		"    System:\t%v\n" +
+		"    Protection Domain:\t%v\n" +
+		"    Storage Pool:\t%v\n" +
+		"    Storage Mode:\t%v\n" +
+		"    VolumeName:\t%v\n" +
+		"    FSType:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		sio.Gateway, sio.System, sio.ProtectionDomain, sio.StoragePool, sio.StorageMode, sio.VolumeName, sio.FSType, sio.ReadOnly)
 }
@@ -956,62 +959,62 @@ func printScaleIOPersistentVolumeSource(sio *api.ScaleIOPersistentVolumeSource, 
 		secretName = sio.SecretRef.Name
 		secretNS = sio.SecretRef.Namespace
 	}
-	w.Write(LEVEL_2, "Type:\tScaleIO (a persistent volume backed by a block device in ScaleIO)\n"+
-		"    Gateway:\t%v\n"+
-		"    System:\t%v\n"+
-		"    Protection Domain:\t%v\n"+
-		"    Storage Pool:\t%v\n"+
-		"    Storage Mode:\t%v\n"+
-		"    VolumeName:\t%v\n"+
-		"    SecretName:\t%v\n"+
-		"    SecretNamespace:\t%v\n"+
-		"    FSType:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tScaleIO (a persistent volume backed by a block device in ScaleIO)\n" +
+		"    Gateway:\t%v\n" +
+		"    System:\t%v\n" +
+		"    Protection Domain:\t%v\n" +
+		"    Storage Pool:\t%v\n" +
+		"    Storage Mode:\t%v\n" +
+		"    VolumeName:\t%v\n" +
+		"    SecretName:\t%v\n" +
+		"    SecretNamespace:\t%v\n" +
+		"    FSType:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		sio.Gateway, sio.System, sio.ProtectionDomain, sio.StoragePool, sio.StorageMode, sio.VolumeName, secretName, secretNS, sio.FSType, sio.ReadOnly)
 }
 
 func printLocalVolumeSource(ls *api.LocalVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tLocalVolume (a persistent volume backed by local storage on a node)\n"+
+	w.Write(LEVEL_2, "Type:\tLocalVolume (a persistent volume backed by local storage on a node)\n" +
 		"    Path:\t%v\n",
 		ls.Path)
 }
 
 func printCephFSVolumeSource(cephfs *api.CephFSVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tCephFS (a CephFS mount on the host that shares a pod's lifetime)\n"+
-		"    Monitors:\t%v\n"+
-		"    Path:\t%v\n"+
-		"    User:\t%v\n"+
-		"    SecretFile:\t%v\n"+
-		"    SecretRef:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tCephFS (a CephFS mount on the host that shares a pod's lifetime)\n" +
+		"    Monitors:\t%v\n" +
+		"    Path:\t%v\n" +
+		"    User:\t%v\n" +
+		"    SecretFile:\t%v\n" +
+		"    SecretRef:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		cephfs.Monitors, cephfs.Path, cephfs.User, cephfs.SecretFile, cephfs.SecretRef, cephfs.ReadOnly)
 }
 
 func printCephFSPersistentVolumeSource(cephfs *api.CephFSPersistentVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tCephFS (a CephFS mount on the host that shares a pod's lifetime)\n"+
-		"    Monitors:\t%v\n"+
-		"    Path:\t%v\n"+
-		"    User:\t%v\n"+
-		"    SecretFile:\t%v\n"+
-		"    SecretRef:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tCephFS (a CephFS mount on the host that shares a pod's lifetime)\n" +
+		"    Monitors:\t%v\n" +
+		"    Path:\t%v\n" +
+		"    User:\t%v\n" +
+		"    SecretFile:\t%v\n" +
+		"    SecretRef:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		cephfs.Monitors, cephfs.Path, cephfs.User, cephfs.SecretFile, cephfs.SecretRef, cephfs.ReadOnly)
 }
 
 func printStorageOSVolumeSource(storageos *api.StorageOSVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tStorageOS (a StorageOS Persistent Disk resource)\n"+
-		"    VolumeName:\t%v\n"+
-		"    VolumeNamespace:\t%v\n"+
-		"    FSType:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tStorageOS (a StorageOS Persistent Disk resource)\n" +
+		"    VolumeName:\t%v\n" +
+		"    VolumeNamespace:\t%v\n" +
+		"    FSType:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		storageos.VolumeName, storageos.VolumeNamespace, storageos.FSType, storageos.ReadOnly)
 }
 
 func printStorageOSPersistentVolumeSource(storageos *api.StorageOSPersistentVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tStorageOS (a StorageOS Persistent Disk resource)\n"+
-		"    VolumeName:\t%v\n"+
-		"    VolumeNamespace:\t%v\n"+
-		"    FSType:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tStorageOS (a StorageOS Persistent Disk resource)\n" +
+		"    VolumeName:\t%v\n" +
+		"    VolumeNamespace:\t%v\n" +
+		"    FSType:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		storageos.VolumeName, storageos.VolumeNamespace, storageos.FSType, storageos.ReadOnly)
 }
@@ -1021,18 +1024,18 @@ func printFCVolumeSource(fc *api.FCVolumeSource, w PrefixWriter) {
 	if fc.Lun != nil {
 		lun = strconv.Itoa(int(*fc.Lun))
 	}
-	w.Write(LEVEL_2, "Type:\tFC (a Fibre Channel disk)\n"+
-		"    TargetWWNs:\t%v\n"+
-		"    LUN:\t%v\n"+
-		"    FSType:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tFC (a Fibre Channel disk)\n" +
+		"    TargetWWNs:\t%v\n" +
+		"    LUN:\t%v\n" +
+		"    FSType:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		strings.Join(fc.TargetWWNs, ", "), lun, fc.FSType, fc.ReadOnly)
 }
 
 func printAzureFileVolumeSource(azureFile *api.AzureFileVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tAzureFile (an Azure File Service mount on the host and bind mount to the pod)\n"+
-		"    SecretName:\t%v\n"+
-		"    ShareName:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tAzureFile (an Azure File Service mount on the host and bind mount to the pod)\n" +
+		"    SecretName:\t%v\n" +
+		"    ShareName:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		azureFile.SecretName, azureFile.ShareName, azureFile.ReadOnly)
 }
@@ -1042,33 +1045,41 @@ func printAzureFilePersistentVolumeSource(azureFile *api.AzureFilePersistentVolu
 	if azureFile.SecretNamespace != nil {
 		ns = *azureFile.SecretNamespace
 	}
-	w.Write(LEVEL_2, "Type:\tAzureFile (an Azure File Service mount on the host and bind mount to the pod)\n"+
-		"    SecretName:\t%v\n"+
-		"    SecretNamespace:\t%v\n"+
-		"    ShareName:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tAzureFile (an Azure File Service mount on the host and bind mount to the pod)\n" +
+		"    SecretName:\t%v\n" +
+		"    SecretNamespace:\t%v\n" +
+		"    ShareName:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		azureFile.SecretName, ns, azureFile.ShareName, azureFile.ReadOnly)
 }
 
 func printFlexVolumeSource(flex *api.FlexVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tFlexVolume (a generic volume resource that is provisioned/attached using an exec based plugin)\n"+
-		"    Driver:\t%v\n"+
-		"    FSType:\t%v\n"+
-		"    SecretRef:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tFlexVolume (a generic volume resource that is provisioned/attached using an exec based plugin)\n" +
+		"    Driver:\t%v\n" +
+		"    FSType:\t%v\n" +
+		"    SecretRef:\t%v\n" +
 		"    ReadOnly:\t%v\n",
 		"    Options:\t%v\n",
 		flex.Driver, flex.FSType, flex.SecretRef, flex.ReadOnly, flex.Options)
 }
 
 func printFlockerVolumeSource(flocker *api.FlockerVolumeSource, w PrefixWriter) {
-	w.Write(LEVEL_2, "Type:\tFlocker (a Flocker volume mounted by the Flocker agent)\n"+
-		"    DatasetName:\t%v\n"+
+	w.Write(LEVEL_2, "Type:\tFlocker (a Flocker volume mounted by the Flocker agent)\n" +
+		"    DatasetName:\t%v\n" +
 		"    DatasetUUID:\t%v\n",
 		flocker.DatasetName, flocker.DatasetUUID)
 }
 
 type PersistentVolumeDescriber struct {
 	clientset.Interface
+}
+
+func printQcloudCbsVolumeSource(d *api.QcloudCbsVolumeSource, w PrefixWriter) {
+	w.Write(LEVEL_2, "    Type:\tQcloudCbs (QCloud cbs disk mount on the host and bind mount to the pod)\n" +
+		"    CbsDiskId:\t%v\n" +
+		"    FSType:\t%v\n" +
+		"    ReadOnly:\t%v\n",
+		d.CbsDiskId, d.FSType, d.ReadOnly)
 }
 
 func (d *PersistentVolumeDescriber) Describe(namespace, name string, describerSettings printers.DescriberSettings) (string, error) {
@@ -1096,7 +1107,7 @@ func describePersistentVolume(pv *api.PersistentVolume, events *api.EventList) (
 		w.Write(LEVEL_0, "StorageClass:\t%s\n", helper.GetPersistentVolumeClass(pv))
 		w.Write(LEVEL_0, "Status:\t%s\n", pv.Status.Phase)
 		if pv.Spec.ClaimRef != nil {
-			w.Write(LEVEL_0, "Claim:\t%s\n", pv.Spec.ClaimRef.Namespace+"/"+pv.Spec.ClaimRef.Name)
+			w.Write(LEVEL_0, "Claim:\t%s\n", pv.Spec.ClaimRef.Namespace + "/" + pv.Spec.ClaimRef.Name)
 		} else {
 			w.Write(LEVEL_0, "Claim:\t%s\n", "")
 		}
@@ -1150,6 +1161,9 @@ func describePersistentVolume(pv *api.PersistentVolume, events *api.EventList) (
 			printFlexVolumeSource(pv.Spec.FlexVolume, w)
 		case pv.Spec.Flocker != nil:
 			printFlockerVolumeSource(pv.Spec.Flocker, w)
+		case pv.Spec.QcloudCbs != nil:
+			printQcloudCbsVolumeSource(pv.Spec.QcloudCbs, w)
+
 		default:
 			w.Write(LEVEL_1, "<unknown>\n")
 		}
@@ -1208,7 +1222,7 @@ func describePersistentVolumeClaim(pvc *api.PersistentVolumeClaim, events *api.E
 }
 
 func describeContainers(label string, containers []api.Container, containerStatuses []api.ContainerStatus,
-	resolverFn EnvVarResolverFunc, w PrefixWriter, space string) {
+resolverFn EnvVarResolverFunc, w PrefixWriter, space string) {
 	statuses := map[string]api.ContainerStatus{}
 	for _, status := range containerStatuses {
 		statuses[status.Name] = status
@@ -2002,7 +2016,7 @@ func describeIngressAnnotations(w PrefixWriter, annotations map[string]string) {
 			continue
 		}
 		parts := strings.Split(k, "/")
-		name := parts[len(parts)-1]
+		name := parts[len(parts) - 1]
 		w.Write(LEVEL_1, "%v:\t%s\n", name, v)
 	}
 	return
@@ -2250,11 +2264,11 @@ func describeServiceAccount(serviceAccount *api.ServiceAccount, tokens []api.Sec
 
 		var (
 			emptyHeader = "                   "
-			pullHeader  = "Image pull secrets:"
+			pullHeader = "Image pull secrets:"
 			mountHeader = "Mountable secrets: "
 			tokenHeader = "Tokens:            "
 
-			pullSecretNames  = []string{}
+			pullSecretNames = []string{}
 			mountSecretNames = []string{}
 			tokenSecretNames = []string{}
 		)
@@ -2666,8 +2680,8 @@ func describeCertificateSigningRequest(csr *certificates.CertificateSigningReque
 		if len(values) == 0 {
 			return
 		}
-		w.Write(LEVEL_0, prefix+name+":\t")
-		w.Write(LEVEL_0, strings.Join(values, "\n"+prefix+"\t"))
+		w.Write(LEVEL_0, prefix + name + ":\t")
+		w.Write(LEVEL_0, strings.Join(values, "\n" + prefix + "\t"))
 		w.Write(LEVEL_0, "\n")
 	}
 
@@ -2691,7 +2705,7 @@ func describeCertificateSigningRequest(csr *certificates.CertificateSigningReque
 		printListHelper(w, "\t", "StreetAddress", cr.Subject.StreetAddress)
 		printListHelper(w, "\t", "PostalCode", cr.Subject.PostalCode)
 
-		if len(cr.DNSNames)+len(cr.EmailAddresses)+len(cr.IPAddresses) > 0 {
+		if len(cr.DNSNames) + len(cr.EmailAddresses) + len(cr.IPAddresses) > 0 {
 			w.Write(LEVEL_0, "Subject Alternative Names:\n")
 			printListHelper(w, "\t", "DNS Names", cr.DNSNames)
 			printListHelper(w, "\t", "Email Addresses", cr.EmailAddresses)
@@ -3566,13 +3580,13 @@ func printTaintsMultilineWithIndent(w PrefixWriter, initialIndent, title, innerI
 	// to print taints in the sorted order
 	keys := make([]string, 0, len(taints))
 	for _, taint := range taints {
-		keys = append(keys, string(taint.Effect)+","+taint.Key)
+		keys = append(keys, string(taint.Effect) + "," + taint.Key)
 	}
 	sort.Strings(keys)
 
 	for i, key := range keys {
 		for _, taint := range taints {
-			if string(taint.Effect)+","+taint.Key == key {
+			if string(taint.Effect) + "," + taint.Key == key {
 				if i != 0 {
 					w.Write(LEVEL_0, "%s", initialIndent)
 					w.Write(LEVEL_0, "%s", innerIndent)

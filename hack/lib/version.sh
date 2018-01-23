@@ -78,12 +78,12 @@ kube::version::get_version_vars() {
         # We have distance to base tag (v1.1.0-1-gCommitHash)
         KUBE_GIT_VERSION=$(echo "${KUBE_GIT_VERSION}" | sed "s/-g\([0-9a-f]\{14\}\)$/+\1/")
       fi
-      if [[ "${KUBE_GIT_TREE_STATE}" == "dirty" ]]; then
+ #     if [[ "${KUBE_GIT_TREE_STATE}" == "dirty" ]]; then
         # git describe --dirty only considers changes to existing files, but
         # that is problematic since new untracked .go files affect the build,
         # so use our idea of "dirty" from git status instead.
-        KUBE_GIT_VERSION+="-dirty"
-      fi
+ #       KUBE_GIT_VERSION+="-dirty"
+ #     fi
 
 
       # Try to match the "git describe" output to a regex to try to extract
