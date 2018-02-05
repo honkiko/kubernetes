@@ -1,0 +1,19 @@
+{
+	"comment": "",
+	"ignore": "",
+	"package": [
+		{
+			"checksumSHA1": "xdHUiD/0CMjS9glKeWBJALSIhxs=",
+			"path": "github.com/bitly/go-simplejson",
+			"revision": "0c965951289cce37dec52ad1f34200fefc816777",
+			"revisionTime": "2017-10-23T17:51:54Z"
+		},
+		{
+			"checksumSHA1": "VK/1dW/n0px3rra1C/YW402UVy8=",
+			"path": "github.com/janeczku/go-ipset/ipset",
+			"revision": "499ed3217c4b5a39b31c483b0151aea724adb933",
+			"revisionTime": "2017-02-06T21:24:42Z"
+		}
+	],
+	"rootPath": "k8s.io/kubernetes"
+}
