@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"time"
 	_ "golang.org/x/text/unicode/norm"
+	"strconv"
 )
 
 const (
@@ -270,6 +271,9 @@ type NormCreateLbReq struct {
 	UniqSubnetID   *string`json:"uniqSubnetId,omitempty"`
 	Vip            *string`json:"theVip,omitempty"`
 
+	InternetChargeType            string`json:"internetChargeType,omitempty"`
+	InternetMaxBandwidthOut       int `json:"internetMaxBandwidthOut,omitempty"`
+
 	LBDomainPrefix string `json:"LBPrefix"`
 }
 
@@ -312,7 +316,8 @@ type LbInfoDetail struct {
 }
 
 func NormCreateLB(namespace string, serviceName string, serviceUuid string,
-lBName string, lBType string, lbDomainPrefix string, subnetId *int, uniqSubnetId *string, vip string) error {
+lBName string, lBType string, lbDomainPrefix string, subnetId *int, uniqSubnetId *string, vip string,
+internetChargeType string, internetMaxBandwidthOut string) error {
 	c := NewNormClient()
 	rsp := &NormNoRsp{}
 	req := NormCreateLbReq{
@@ -332,6 +337,18 @@ lBName string, lBType string, lbDomainPrefix string, subnetId *int, uniqSubnetId
 	}
 	if vip != "" {
 		req.Vip = &vip
+	}
+
+	if internetChargeType != "" {
+		req.InternetChargeType = internetChargeType
+	}
+
+	if internetMaxBandwidthOut != "" {
+		intBandwidthOut, err := strconv.Atoi(internetMaxBandwidthOut)
+		if err != nil {
+			return err
+		}
+		req.InternetMaxBandwidthOut = intBandwidthOut
 	}
 	err := c.DoRequest(NORM_CREATE_LB, req, rsp)
 	if err != nil {

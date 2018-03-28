@@ -44,6 +44,9 @@ const (
 	AnnoServiceLBInternalSubnetID     = "service.kubernetes.io/qcloud-loadbalancer-internal"
 	AnnoServiceLBInternalUniqSubnetID = "service.kubernetes.io/qcloud-loadbalancer-internal-subnetid"
 
+	AnnoInternetChargeType      = "service.kubernetes.io/qcloud-loadbalancer-internet-charge-type"
+	AnnoInternetMaxBandwidthOut = "service.kubernetes.io/qcloud-loadbalancer-internet-max-bandwidth-out"
+
 	AnnoServiceClusterId = "service.kubernetes.io/qcloud-loadbalancer-clusterid"
 )
 

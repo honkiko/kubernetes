@@ -201,6 +201,10 @@ func (self *QCloud) ensureLBCreate(clusterName string, apiService *v1.Service, h
 		}
 	}
 
+
+	internetChargeType, _ := annotations[AnnoInternetChargeType]
+	internetMaxBandwidthOut, _ := annotations[AnnoInternetMaxBandwidthOut]
+
 	//create
 	lbName := apiService.Name
 	//regularize lb name: ccs_[cluster_id]_[service_name]
@@ -215,10 +219,12 @@ func (self *QCloud) ensureLBCreate(clusterName string, apiService *v1.Service, h
 	if toCreateLBType == LB_CREATE_TYPE_INTERNAL {
 		if hasUniqSubnetId {
 			err = norm.NormCreateLB(apiService.Namespace, apiService.Name, string(apiService.GetUID()), lbName,
-				LB_CREATE_TYPE_INTERNAL, lbDomainPrefix, nil, &uniqSubnetId, apiService.Spec.LoadBalancerIP)
+				LB_CREATE_TYPE_INTERNAL, lbDomainPrefix, nil, &uniqSubnetId, apiService.Spec.LoadBalancerIP,
+			internetChargeType, internetMaxBandwidthOut)
 		} else if hasSubnetId {
 			err = norm.NormCreateLB(apiService.Namespace, apiService.Name, string(apiService.GetUID()), lbName,
-				LB_CREATE_TYPE_INTERNAL, lbDomainPrefix, &subnetId, nil, apiService.Spec.LoadBalancerIP)
+				LB_CREATE_TYPE_INTERNAL, lbDomainPrefix, &subnetId, nil, apiService.Spec.LoadBalancerIP,
+			internetChargeType, internetMaxBandwidthOut)
 		}
 	} else {
 		if apiService.Spec.LoadBalancerIP != "" {
@@ -227,7 +233,8 @@ func (self *QCloud) ensureLBCreate(clusterName string, apiService *v1.Service, h
 
 		//default is the open LB
 		err = norm.NormCreateLB(apiService.Namespace, apiService.Name, string(apiService.GetUID()), lbName,
-			LB_CREATE_TYPE_OPEN, lbDomainPrefix, nil, nil, "")
+			LB_CREATE_TYPE_OPEN, lbDomainPrefix, nil, nil, "",
+			internetChargeType, internetMaxBandwidthOut)
 	}
 
 	if err != nil {
