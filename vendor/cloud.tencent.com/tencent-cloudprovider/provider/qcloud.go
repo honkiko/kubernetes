@@ -18,8 +18,9 @@ package qcloud
 
 import (
 	"fmt"
-	"github.com/golang/glog"
 	"io"
+
+	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/controller"
 	//"k8s.io/apimachinery/pkg/types"
@@ -40,8 +41,8 @@ import (
 )
 
 const (
-	ProviderName = "qcloud"
-	AnnoServiceLBInternalSubnetID = "service.kubernetes.io/qcloud-loadbalancer-internal"
+	ProviderName                      = "qcloud"
+	AnnoServiceLBInternalSubnetID     = "service.kubernetes.io/qcloud-loadbalancer-internal"
 	AnnoServiceLBInternalUniqSubnetID = "service.kubernetes.io/qcloud-loadbalancer-internal-subnetid"
 
 	AnnoServiceClusterId = "service.kubernetes.io/qcloud-loadbalancer-clusterid"
@@ -56,23 +57,23 @@ type QCloud struct {
 	cbs                 *cbs.Client
 	snap                *snap.Client
 
-	Config              *Config
-	selfInstanceInfo    *cvm.InstanceInfo
+	Config           *Config
+	selfInstanceInfo *cvm.InstanceInfo
 }
 
 type Config struct {
-	Region          string `json:"region"`
-	Zone            string `json:"zone"`
-	VpcId           string `json:"vpcId"`
+	Region string `json:"region"`
+	Zone   string `json:"zone"`
+	VpcId  string `json:"vpcId"`
 
 	QCloudSecretId  string `json:"QCloudSecretId"`
 	QCloudSecretKey string `json:"QCloudSecretKey"`
 
-	Kubeconfig      string `json:"kubeconfig"`
+	Kubeconfig string `json:"kubeconfig"`
 }
 
 var (
-	config Config
+	config                 Config
 	QcloudInstanceNotFound = errors.New("qcloud instance not found")
 )
 

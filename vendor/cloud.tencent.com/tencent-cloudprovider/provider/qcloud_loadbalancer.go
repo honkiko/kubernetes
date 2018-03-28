@@ -17,15 +17,16 @@ limitations under the License.
 package qcloud
 
 import (
-	norm "cloud.tencent.com/tencent-cloudprovider/component"
 	"errors"
 	"fmt"
-	"github.com/golang/glog"
-	"k8s.io/api/core/v1"
-	"k8s.io/kubernetes/pkg/cloudprovider"
 	"strconv"
 	"strings"
 	"time"
+
+	norm "cloud.tencent.com/tencent-cloudprovider/component"
+	"github.com/golang/glog"
+	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/kubernetes/pkg/cloudprovider"
 )
 
 const (
@@ -175,6 +176,10 @@ func (self *QCloud) ensureLBCreate(clusterName string, apiService *v1.Service, h
 	annotations := apiService.ObjectMeta.Annotations
 	uniqSubnetId, hasUniqSubnetId := annotations[AnnoServiceLBInternalUniqSubnetID]
 	iSubnetId, hasSubnetId := annotations[AnnoServiceLBInternalSubnetID]
+	enilb := annotations[AnnoServiceLBEni]
+	if enilb == "true" {
+		return nil
+	}
 	var subnetId int
 	if hasSubnetId && len(iSubnetId) > 0 {
 		subnetId, err = getSubnetIdInt(iSubnetId)
