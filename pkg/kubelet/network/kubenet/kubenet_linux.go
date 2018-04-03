@@ -75,15 +75,11 @@ const (
 	// https://github.com/containernetworking/cni/tree/master/plugins/ipam/host-local#backends
 	defaultIPAMDir = "/var/lib/cni/networks"
 
-	// get eni
-	interval = 500
+
 )
 
 // CNI plugins required by kubenet in /opt/cni/bin or vendor directory
 var requiredCNIPlugins = [...]string{"bridge", "host-local", "loopback"}
-
-// Eni timeout
-var EniTimeout = 20
 
 type kubenetNetworkPlugin struct {
 	network.NoopNetworkPlugin
@@ -120,7 +116,6 @@ var NonMasqueradeCIDRList = []string{}
 func init() {
 	fs := pflag.CommandLine
 	fs.StringSliceVar(&NonMasqueradeCIDRList, "non-masquerade-cidr-list", []string{}, "Traffic to IPs outside this range will use IP masquerade")
-	fs.IntVar(&EniTimeout, "eni-timeout", 20, "eni timeout")
 }
 
 func NewPlugin(networkPluginDir string) network.NetworkPlugin {
@@ -359,21 +354,18 @@ func (plugin *kubenetNetworkPlugin) Capabilities() utilsets.Int {
 // setup sets up networking through CNI using the given ns/name and sandbox ID.
 // TODO: Don't pass the pod to this method, it only needs it for bandwidth
 // shaping and hostport management.
-func (plugin *kubenetNetworkPlugin) setup(namespace string, name string, id kubecontainer.ContainerID, pod *v1.Pod, annotations map[string]string, eniConfig *QcloudCniConf) error {
+func (plugin *kubenetNetworkPlugin) setup(namespace string, name string, id kubecontainer.ContainerID, pod *v1.Pod, annotations map[string]string) error {
 	// Bring up container loopback interface
 	if _, err := plugin.addContainerToNetwork(plugin.loConfig, "lo", namespace, name, id); err != nil {
 		return err
 	}
 
 	var ip4 net.IP
-	if eniConfig != nil {
-		glog.Infof("eniconfig: %s", eniConfig)
-		conf, rt, err := plugin.buildEniCNIConf(eniConfig, network.DefaultInterfaceName, namespace, name, id)
-		if err != nil {
-			return fmt.Errorf("%v", err)
-		}
-		if eniConfig.UseBridge == true {
-			glog.Infoln("Doubel config file")
+
+	if v, ok := annotations["qcloud.CNI_CONFIG_INFO"]; ok {
+		confSpec, err := GetQcloudCniSepc(v)
+		if err == nil && confSpec.UseBridge == true {
+			glog.Infoln("double network interface: add eth0 with original")
 			// Hook container up with our bridge
 			resT, err := plugin.addContainerToNetwork(plugin.netConfig, network.DefaultInterfaceName, namespace, name, id)
 			if err != nil {
@@ -391,17 +383,40 @@ func (plugin *kubenetNetworkPlugin) setup(namespace string, name string, id kube
 			if ip4 == nil {
 				return fmt.Errorf("CNI plugin reported an invalid IPv4 address for container %v: %+v.", id, res.IP4)
 			}
-
-			// Add eni to container
-			err = plugin.AddEniNetwork(conf, rt)
+			glog.Infoln("double network interface: add eth1 with eni")
+			conf, rt, err := plugin.buildEniCNIConf("eth1", namespace, name, id)
+			if err != nil {
+				fmt.Errorf("plugin.buildEniCNIConf %v", err)
+			}
+			_, err = plugin.AddEniNetwork(conf, rt)
 			glog.Infof("%s", conf)
 			if err != nil {
 				return fmt.Errorf("%v", err)
 			}
 		} else {
-			glog.Infoln("Just add EniConf")
-			// Add eni to container
-			err = plugin.AddEniNetwork(conf, rt)
+			glog.Infoln("single network interface")
+			conf, rt, err := plugin.buildEniCNIConf(network.DefaultInterfaceName, namespace, name, id)
+			if err != nil {
+				fmt.Errorf("plugin.buildEniCNIConf %v", err)
+			}
+			if conf.Network == nil {
+				fmt.Errorf("conf.Network %v", conf)
+			}
+			resT, err := plugin.AddEniNetwork(conf, rt)
+			if err != nil {
+				return err
+			}
+			res, err := cnitypes020.GetResult(resT)
+			if err != nil {
+				return fmt.Errorf("unable to understand network config: %s", res.String())
+			}
+			if res.IP4 == nil {
+				return fmt.Errorf("CNI plugin reported no IPv4 address for container %v.", id)
+			}
+			ip4 = res.IP4.IP.IP.To4()
+			if ip4 == nil {
+				return fmt.Errorf("CNI plugin reported an invalid IPv4 address for container %v: %+v.", id, res.IP4)
+			}
 			if err != nil {
 				return fmt.Errorf("%v", err)
 			}
@@ -415,14 +430,14 @@ func (plugin *kubenetNetworkPlugin) setup(namespace string, name string, id kube
 		// Coerce the CNI result version
 		res, err := cnitypes020.GetResult(resT)
 		if err != nil {
-			return fmt.Errorf("unable to understand network config: %v", err)
+			return fmt.Errorf("unable to understand network config: %v\n", err)
 		}
 		if res.IP4 == nil {
-			return fmt.Errorf("CNI plugin reported no IPv4 address for container %v.", id)
+			return fmt.Errorf("CNI plugin reported no IPv4 address for container %v.\n", id)
 		}
 		ip4 = res.IP4.IP.IP.To4()
 		if ip4 == nil {
-			return fmt.Errorf("CNI plugin reported an invalid IPv4 address for container %v: %+v.", id, res.IP4)
+			return fmt.Errorf("CNI plugin reported an invalid IPv4 address for container %v: %+v.\n", id, res.IP4)
 		}
 	}
 
@@ -520,28 +535,12 @@ func (plugin *kubenetNetworkPlugin) SetUpPod(namespace string, name string, id k
 	if !ok {
 		return fmt.Errorf("pod %q cannot be found", name)
 	}
-	glog.Infoln(pod)
-	var eniConfig *QcloudCniConf
-	for i := 0; (i * interval) < (EniTimeout * 1000); i++ {
-		podJSON, err := plugin.execer.Command("kubectl", "--kubeconfig", "/root/.kube/config", "-n", namespace, "get", "pod", name, "-o", "json").CombinedOutput()
-		eniConfig, err = GetQcloudCniInfo(podJSON)
-		if err != nil {
-			glog.Errorf("GetQcloudCniInfo err: %s", err.Error())
-			break
-		}
-		if eniConfig != nil && eniConfig.Eni.Status != nil && (eniConfig.UseBridge == true || eniConfig.UseBridge == false) {
-			glog.Infoln(eniConfig)
-			break
-		}
-		time.Sleep(time.Millisecond * interval)
-		glog.Infoln("getting pod annontions form pod runtime")
-	}
 
 	if err := plugin.Status(); err != nil {
 		return fmt.Errorf("Kubenet cannot SetUpPod: %v", err)
 	}
 
-	if err := plugin.setup(namespace, name, id, pod, annotations, eniConfig); err != nil {
+	if err := plugin.setup(namespace, name, id, pod, annotations); err != nil {
 		glog.Errorln(err)
 		// Make sure everything gets cleaned up on errors
 		podIP, _ := plugin.podIPs[id]
@@ -591,7 +590,7 @@ func (plugin *kubenetNetworkPlugin) teardown(namespace string, name string, id k
 		delete(plugin.podIPs, id)
 	}
 
-	conf, rt, err := plugin.buildEniCNIConf(nil, network.DefaultInterfaceName, namespace, name, id)
+	conf, rt, err := plugin.buildEniCNIConf("", namespace, name, id)
 	if err != nil {
 		glog.Errorln(conf)
 		glog.Errorln(rt)
@@ -874,67 +873,40 @@ func (plugin *kubenetNetworkPlugin) buildCNIRuntimeConf(ifName string, id kubeco
 	}, nil
 }
 
-func (plugin *kubenetNetworkPlugin) buildEniCNIConf(eni *QcloudCniConf, ifName, namespace, name string, id kubecontainer.ContainerID) (*libcni.NetworkConfig, *libcni.RuntimeConf, error) {
-	var conf string
-	if eni == nil {
-		glog.Infoln(ifName)
-		glog.Infoln(namespace)
-		glog.Infoln(name)
-		conf = `{
-			"cniVersion": "0.3.0",
-			"name": "kubenet-eni",
-			"type": "eni"
-		}`
-	} else {
-		if eni.Eni.Status == nil || eni.Eni.Status.Pip == "" || eni.Eni.Status.Mac == "" || eni.Eni.Status.Mask == 0 {
-			return nil, nil, fmt.Errorf("setup eni status error,some var empty,%v", eni)
-		}
-		ipString := fmt.Sprintf("%s/%d", eni.Eni.Status.Pip, eni.Eni.Status.Mask)
-		_, cidr, err := net.ParseCIDR(ipString)
-		if err != nil {
-			return nil, nil, err
-		}
-		cidr.IP.To4()[3]++
-		conf = fmt.Sprintf(`{
-			"cniVersion": "0.3.0",
-			"name": "kubenet-eni",
-			"type": "eni",
-			"hwaddr": "%s",
-			"address":"%s",
-			"gateway":"%s",
-			"eniId":"%s",
-                        "ClusterDeploy": %t
-		}`, eni.Eni.Status.Mac, ipString, cidr.IP.To4().String(), eni.Eni.Status.EniId, eni.UseBridge)
+func (plugin *kubenetNetworkPlugin) buildEniCNIConf(ifName, namespace, name string, id kubecontainer.ContainerID) (config *libcni.NetworkConfig, rt *libcni.RuntimeConf, err error) {
+	var conf  string
+	if ifName == "" {
+		conf = `{"cniVersion": "0.3.0", "name": "eni", "type": "eni"}`
+		rt, err = plugin.buildCNIRuntimeConf("eth0", id, false)
 
+	} else {
+		conf = fmt.Sprintf(`{"cniVersion":"0.3.0","name":"%s","type":"eni","namespace":"%s","podname":"%s","ipam":{"type":"enim"}}`, ifName, namespace, name)
+		rt, err = plugin.buildCNIRuntimeConf(ifName, id, false)
 	}
-	rt, err := plugin.buildCNIRuntimeConf(ifName, id, false)
+
 	if err != nil {
-		glog.Infoln(conf)
-		glog.Infoln(rt)
 		return nil, nil, fmt.Errorf("Error building CNI config: %v", err)
 	}
 
 	glog.Infof("Adding %s/%s with CNI '%s' plugin and runtime: %+v", namespace, name, "eni", rt)
-	config, err := libcni.ConfFromBytes([]byte(conf))
+
+	config, err = libcni.ConfFromBytes([]byte(conf))
 	if err != nil {
 		return nil, nil, fmt.Errorf("Failed to generate eni config: %v", err)
 	}
+	glog.Infof(string(config.Bytes))
 	return config, rt, nil
 }
 
-func (plugin *kubenetNetworkPlugin) AddEniNetwork(conf *libcni.NetworkConfig, rt *libcni.RuntimeConf) error {
-	glog.Infof("%s", conf)
-	glog.Infoln(rt)
-	_, err := plugin.cniConfig.AddNetwork(conf, rt)
+func (plugin *kubenetNetworkPlugin) AddEniNetwork(conf *libcni.NetworkConfig, rt *libcni.RuntimeConf) (cnitypes.Result, error) {
+	res, err := plugin.cniConfig.AddNetwork(conf, rt)
 	if err != nil {
-		return fmt.Errorf("Error adding container to network: %v", err)
+		return nil, fmt.Errorf("Error adding container to network: %v", err)
 	}
-	return nil
+	return res, nil
 }
 
 func (plugin *kubenetNetworkPlugin) DelEniNetwork(conf *libcni.NetworkConfig, rt *libcni.RuntimeConf) error {
-	glog.Infof("%s", conf)
-	glog.Infoln(rt)
 	err := plugin.cniConfig.DelNetwork(conf, rt)
 	if err != nil {
 		return fmt.Errorf("Error removing container from network: %v", err)
