@@ -25,7 +25,7 @@ import (
 
 	norm "cloud.tencent.com/tencent-cloudprovider/component"
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 )
 
@@ -176,9 +176,12 @@ func (self *QCloud) ensureLBCreate(clusterName string, apiService *v1.Service, h
 	annotations := apiService.ObjectMeta.Annotations
 	uniqSubnetId, hasUniqSubnetId := annotations[AnnoServiceLBInternalUniqSubnetID]
 	iSubnetId, hasSubnetId := annotations[AnnoServiceLBInternalSubnetID]
-	enilb := annotations[AnnoServiceLBEni]
-	if enilb == "true" {
-		return nil
+	eniLb, hasEniLb := annotations[AnnoServiceLBInternalEniLB]
+	if hasEniLb {
+		if eniLb == "true" {
+			glog.Info("will enable eni lb...")
+			return nil
+		}
 	}
 	var subnetId int
 	if hasSubnetId && len(iSubnetId) > 0 {

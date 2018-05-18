@@ -18,7 +18,6 @@ package qcloud
 
 import (
 	"fmt"
-
 	"github.com/dbdd4us/qcloudapi-sdk-go/cbs"
 	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/types"
