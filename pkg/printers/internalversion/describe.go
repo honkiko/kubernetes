@@ -754,6 +754,8 @@ func describeVolumes(volumes []api.Volume, w PrefixWriter, space string) {
 			printFlexVolumeSource(volume.VolumeSource.FlexVolume, w)
 		case volume.VolumeSource.Flocker != nil:
 			printFlockerVolumeSource(volume.VolumeSource.Flocker, w)
+		case volume.VolumeSource.QcloudCbs != nil:
+			printQcloudCbsVolumeSource(volume.VolumeSource.QcloudCbs, w)
 		default:
 			w.Write(LEVEL_1, "<unknown>\n")
 		}
@@ -1114,6 +1116,14 @@ func printCSIPersistentVolumeSource(csi *api.CSIPersistentVolumeSource, w Prefix
 		csi.Driver, csi.VolumeHandle, csi.ReadOnly)
 }
 
+func printQcloudCbsVolumeSource(d *api.QcloudCbsVolumeSource, w PrefixWriter) {
+	w.Write(LEVEL_2, "    Type:\tQcloudCbs (QCloud cbs disk mount on the host and bind mount to the pod)\n" +
+		"    CbsDiskId:\t%v\n" +
+		"    FSType:\t%v\n" +
+		"    ReadOnly:\t%v\n",
+		d.CbsDiskId, d.FSType, d.ReadOnly)
+}
+
 type PersistentVolumeDescriber struct {
 	clientset.Interface
 }
@@ -1250,6 +1260,8 @@ func describePersistentVolume(pv *api.PersistentVolume, events *api.EventList) (
 			printFlockerVolumeSource(pv.Spec.Flocker, w)
 		case pv.Spec.CSI != nil:
 			printCSIPersistentVolumeSource(pv.Spec.CSI, w)
+		case pv.Spec.QcloudCbs != nil:
+			printQcloudCbsVolumeSource(pv.Spec.QcloudCbs, w)
 		default:
 			w.Write(LEVEL_1, "<unknown>\n")
 		}
