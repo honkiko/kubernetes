@@ -18,6 +18,7 @@ package resourcequota
 
 import (
 	"fmt"
+	"math/rand"
 	"sort"
 	"strings"
 	"sync"
@@ -38,6 +39,8 @@ import (
 	_ "k8s.io/kubernetes/pkg/util/workqueue/prometheus" // for workqueue metric registration
 	resourcequotaapi "k8s.io/kubernetes/plugin/pkg/admission/resourcequota/apis/resourcequota"
 )
+
+const retries = 4
 
 // Evaluator is used to see if quota constraints are satisfied.
 type Evaluator interface {
@@ -192,7 +195,7 @@ func (e *quotaEvaluator) checkAttributes(ns string, admissionAttributes []*admis
 		defer releaseLocks()
 	}
 
-	e.checkQuotas(quotas, admissionAttributes, 3)
+	e.checkQuotas(quotas, admissionAttributes, retries)
 }
 
 // checkQuotas checks the admission attributes against the passed quotas.  If a quota applies, it will attempt to update it
@@ -208,6 +211,14 @@ func (e *quotaEvaluator) checkAttributes(ns string, admissionAttributes []*admis
 //    and recurse into this method with the subset.  It's safe for us to evaluate ONLY the subset, because the other quota
 //    documents for these waiters have already been evaluated.  Step 1, will mark all the ones that should already have succeeded.
 func (e *quotaEvaluator) checkQuotas(quotas []api.ResourceQuota, admissionAttributes []*admissionWaiter, remainingRetries int) {
+
+	// delay for random time (0.2ms ~ 1ms) when retry, to avoid conflict error
+	if remainingRetries < retries {
+		times := retries - remainingRetries
+		time.Sleep(time.Duration(rand.Intn(times+1)) * 200 * time.Microsecond)
+		glog.Info("check quotas retry: %d", times)
+	}
+
 	// yet another copy to compare against originals to see if we actually have deltas
 	originalQuotas, err := copyQuotas(quotas)
 	if err != nil {
@@ -285,6 +296,7 @@ func (e *quotaEvaluator) checkQuotas(quotas []api.ResourceQuota, admissionAttrib
 				admissionAttribute.result = lastErr
 			}
 		}
+		glog.Error("fatal error occurred: %v", lastErr)
 		return
 	}
 
