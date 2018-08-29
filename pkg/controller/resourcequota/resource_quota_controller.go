@@ -205,6 +205,9 @@ func (rq *ResourceQuotaController) addQuota(obj interface{}) {
 // worker runs a worker thread that just dequeues items, processes them, and marks them done.
 func (rq *ResourceQuotaController) worker(queue workqueue.RateLimitingInterface) func() {
 	workFunc := func() bool {
+		if queue.Len() == 0 {
+			return false
+		}
 		key, quit := queue.Get()
 		if quit {
 			return true
