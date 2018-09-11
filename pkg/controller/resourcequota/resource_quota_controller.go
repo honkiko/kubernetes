@@ -206,10 +206,11 @@ func (rq *ResourceQuotaController) addQuota(obj interface{}) {
 func (rq *ResourceQuotaController) worker(queue workqueue.RateLimitingInterface) func() {
 	workFunc := func() bool {
 		if queue.Len() == 0 {
-			return false
+			return true
 		}
 		key, quit := queue.Get()
 		if quit {
+			glog.Infof("resource quota controller worker shutting down")
 			return true
 		}
 		defer queue.Done(key)
@@ -226,7 +227,6 @@ func (rq *ResourceQuotaController) worker(queue workqueue.RateLimitingInterface)
 	return func() {
 		for {
 			if quit := workFunc(); quit {
-				glog.Infof("resource quota controller worker shutting down")
 				return
 			}
 		}
