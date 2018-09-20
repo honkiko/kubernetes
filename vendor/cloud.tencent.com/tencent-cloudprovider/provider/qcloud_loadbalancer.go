@@ -17,15 +17,16 @@ limitations under the License.
 package qcloud
 
 import (
-	norm "cloud.tencent.com/tencent-cloudprovider/component"
 	"errors"
 	"fmt"
-	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/cloudprovider"
 	"strconv"
 	"strings"
 	"time"
+
+	norm "cloud.tencent.com/tencent-cloudprovider/component"
+	"github.com/golang/glog"
+	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/kubernetes/pkg/cloudprovider"
 )
 
 const (
@@ -43,7 +44,7 @@ const (
 //有订单还未发货,发货中以及LB正常状态都应该返回exists;没有订单且LB不存在时才返回notxists
 //service type修改为非loadbalancer时候,需要删除lb,此时会先调用此接口确认是否已创建成功,是否需要删除
 func (self *QCloud) GetLoadBalancer(clusterName string, apiService *v1.Service) (status *v1.LoadBalancerStatus, exists bool, err error) {
-
+	return nil, false, nil
 	var queryRsp *norm.LBInfo
 	queryRsp, exists, err = norm.GetLbInfo(string(apiService.GetUID()))
 	if err != nil || queryRsp == nil {
@@ -201,7 +202,6 @@ func (self *QCloud) ensureLBCreate(clusterName string, apiService *v1.Service, h
 		}
 	}
 
-
 	internetChargeType, _ := annotations[AnnoInternetChargeType]
 	internetMaxBandwidthOut, _ := annotations[AnnoInternetMaxBandwidthOut]
 
@@ -220,11 +220,11 @@ func (self *QCloud) ensureLBCreate(clusterName string, apiService *v1.Service, h
 		if hasUniqSubnetId {
 			err = norm.NormCreateLB(apiService.Namespace, apiService.Name, string(apiService.GetUID()), lbName,
 				LB_CREATE_TYPE_INTERNAL, lbDomainPrefix, nil, &uniqSubnetId, apiService.Spec.LoadBalancerIP,
-			internetChargeType, internetMaxBandwidthOut)
+				internetChargeType, internetMaxBandwidthOut)
 		} else if hasSubnetId {
 			err = norm.NormCreateLB(apiService.Namespace, apiService.Name, string(apiService.GetUID()), lbName,
 				LB_CREATE_TYPE_INTERNAL, lbDomainPrefix, &subnetId, nil, apiService.Spec.LoadBalancerIP,
-			internetChargeType, internetMaxBandwidthOut)
+				internetChargeType, internetMaxBandwidthOut)
 		}
 	} else {
 		if apiService.Spec.LoadBalancerIP != "" {
@@ -328,6 +328,8 @@ func nodesToStrings(hosts []*v1.Node) []string {
 //如果返回失败k8s会过一段时间重试5,10,20,40,80
 func (self *QCloud) EnsureLoadBalancer(clusterName string, apiService *v1.Service, hosts []*v1.Node) (*v1.LoadBalancerStatus, error) {
 	glog.V(0).Infof("EnsureLoadBalancer")
+	return &v1.LoadBalancerStatus{}, nil
+
 	//glog.V(0).Infof("garyyu-test  EnsureLoadBalancer(%s,%s,%s,%s,%s,%s,%s)",
 	//	clusterName, spew.Sdump(apiService), spew.Sdump(apiService.TypeMeta), spew.Sdump(apiService.ObjectMeta), spew.Sdump(apiService.Spec),
 	//	spew.Sdump(apiService.Status), hosts)
@@ -354,7 +356,7 @@ func (self *QCloud) EnsureLoadBalancer(clusterName string, apiService *v1.Servic
 //此接口可能会重复调用,需要确认lb侧是否是可重入的
 func (self *QCloud) UpdateLoadBalancer(clusterName string, apiService *v1.Service, hosts []*v1.Node) error {
 	glog.V(0).Infof("garyyu-test  UpdateLoadBalancer")
-
+	return nil
 	needChange, err := self.updateLBHost(apiService, nodesToStrings(hosts))
 	if err != nil {
 		return err
@@ -496,7 +498,7 @@ func (self *QCloud) updateLBHost(apiService *v1.Service, hosts []string) (needCh
 //删除service和修改service类型不为loadbalancer时,会调用此接口
 func (self *QCloud) EnsureLoadBalancerDeleted(clusterName string, apiService *v1.Service) error {
 	glog.V(0).Infof("garyyu-test  EnsureLoadBalancerDeleted")
-
+	return nil
 	var queryRsp *norm.LBInfo
 	queryRsp, exists, err := norm.GetLbInfo(string(apiService.GetUID()))
 	if err != nil {
