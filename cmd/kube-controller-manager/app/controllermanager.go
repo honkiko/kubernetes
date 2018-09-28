@@ -352,7 +352,7 @@ func NewControllerInitializers() map[string]InitFunc {
 	controllers["ttl"] = startTTLController
 	controllers["bootstrapsigner"] = startBootstrapSignerController
 	controllers["tokencleaner"] = startTokenCleanerController
-	controllers["service"] = startServiceController
+	//controllers["service"] = startServiceController
 	controllers["node"] = startNodeController
 	controllers["route"] = startRouteController
 	controllers["persistentvolume-binder"] = startPersistentVolumeBinderController
