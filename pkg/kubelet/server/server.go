@@ -17,6 +17,7 @@ limitations under the License.
 package server
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -174,7 +175,7 @@ type HostInterface interface {
 	RunInContainer(name string, uid types.UID, container string, cmd []string) ([]byte, error)
 	ExecInContainer(name string, uid types.UID, container string, cmd []string, in io.Reader, out, err io.WriteCloser, tty bool, resize <-chan remotecommand.TerminalSize, timeout time.Duration) error
 	AttachContainer(name string, uid types.UID, container string, in io.Reader, out, err io.WriteCloser, tty bool, resize <-chan remotecommand.TerminalSize) error
-	GetKubeletContainerLogs(podFullName, containerName string, logOptions *v1.PodLogOptions, stdout, stderr io.Writer) error
+	GetKubeletContainerLogs(ctx context.Context, podFullName, containerName string, logOptions *v1.PodLogOptions, stdout, stderr io.Writer) error
 	ServeLogs(w http.ResponseWriter, req *http.Request)
 	PortForward(name string, uid types.UID, port int32, stream io.ReadWriteCloser) error
 	StreamingConnectionIdleTimeout() time.Duration
@@ -453,6 +454,7 @@ func (s *Server) getContainerLogs(request *restful.Request, response *restful.Re
 	podNamespace := request.PathParameter("podNamespace")
 	podID := request.PathParameter("podID")
 	containerName := request.PathParameter("containerName")
+	ctx := request.Request.Context()
 
 	if len(podID) == 0 {
 		// TODO: Why return JSON when the rest return plaintext errors?
@@ -530,7 +532,7 @@ func (s *Server) getContainerLogs(request *restful.Request, response *restful.Re
 		fw = limitwriter.New(fw, *logOptions.LimitBytes)
 	}
 	response.Header().Set("Transfer-Encoding", "chunked")
-	if err := s.host.GetKubeletContainerLogs(kubecontainer.GetPodFullName(pod), containerName, logOptions, fw, fw); err != nil {
+	if err := s.host.GetKubeletContainerLogs(ctx, kubecontainer.GetPodFullName(pod), containerName, logOptions, fw, fw); err != nil {
 		if err != limitwriter.ErrMaximumWrite {
 			response.WriteError(http.StatusBadRequest, err)
 		}

@@ -17,6 +17,7 @@ limitations under the License.
 package server
 
 import (
+	"context"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -76,7 +77,7 @@ type fakeKubelet struct {
 	execFunc                           func(pod string, uid types.UID, container string, cmd []string, in io.Reader, out, err io.WriteCloser, tty bool) error
 	attachFunc                         func(pod string, uid types.UID, container string, in io.Reader, out, err io.WriteCloser, tty bool) error
 	portForwardFunc                    func(name string, uid types.UID, port int32, stream io.ReadWriteCloser) error
-	containerLogsFunc                  func(podFullName, containerName string, logOptions *v1.PodLogOptions, stdout, stderr io.Writer) error
+	containerLogsFunc                  func(ctx context.Context, podFullName, containerName string, logOptions *v1.PodLogOptions, stdout, stderr io.Writer) error
 	streamingConnectionIdleTimeoutFunc func() time.Duration
 	hostnameFunc                       func() string
 	resyncInterval                     time.Duration
@@ -125,8 +126,8 @@ func (fk *fakeKubelet) ServeLogs(w http.ResponseWriter, req *http.Request) {
 	fk.logFunc(w, req)
 }
 
-func (fk *fakeKubelet) GetKubeletContainerLogs(podFullName, containerName string, logOptions *v1.PodLogOptions, stdout, stderr io.Writer) error {
-	return fk.containerLogsFunc(podFullName, containerName, logOptions, stdout, stderr)
+func (fk *fakeKubelet) GetKubeletContainerLogs(ctx context.Context, podFullName, containerName string, logOptions *v1.PodLogOptions, stdout, stderr io.Writer) error {
+	return fk.containerLogsFunc(ctx, podFullName, containerName, logOptions, stdout, stderr)
 }
 
 func (fk *fakeKubelet) GetHostname() string {
@@ -900,7 +901,7 @@ func setPodByNameFunc(fw *serverTestFramework, namespace, pod, container string)
 }
 
 func setGetContainerLogsFunc(fw *serverTestFramework, t *testing.T, expectedPodName, expectedContainerName string, expectedLogOptions *v1.PodLogOptions, output string) {
-	fw.fakeKubelet.containerLogsFunc = func(podFullName, containerName string, logOptions *v1.PodLogOptions, stdout, stderr io.Writer) error {
+	fw.fakeKubelet.containerLogsFunc = func(_ context.Context, podFullName, containerName string, logOptions *v1.PodLogOptions, stdout, stderr io.Writer) error {
 		if podFullName != expectedPodName {
 			t.Errorf("expected %s, got %s", expectedPodName, podFullName)
 		}
