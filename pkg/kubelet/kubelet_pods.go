@@ -17,6 +17,7 @@ limitations under the License.
 package kubelet
 
 import (
+	"context"
 	"bytes"
 	"fmt"
 	"io"
@@ -1184,7 +1185,7 @@ func (kl *Kubelet) validateContainerLogStatus(podName string, podStatus *v1.PodS
 // GetKubeletContainerLogs returns logs from the container
 // TODO: this method is returning logs of random container attempts, when it should be returning the most recent attempt
 // or all of them.
-func (kl *Kubelet) GetKubeletContainerLogs(podFullName, containerName string, logOptions *v1.PodLogOptions, stdout, stderr io.Writer) error {
+func (kl *Kubelet) GetKubeletContainerLogs(ctx context.Context, podFullName, containerName string, logOptions *v1.PodLogOptions, stdout, stderr io.Writer) error {
 	// Pod workers periodically write status to statusManager. If status is not
 	// cached there, something is wrong (or kubelet just restarted and hasn't
 	// caught up yet). Just assume the pod is not ready yet.
@@ -1230,9 +1231,9 @@ func (kl *Kubelet) GetKubeletContainerLogs(podFullName, containerName string, lo
 		// dockerLegacyService should only be non-nil when we actually need it, so
 		// inject it into the runtimeService.
 		// TODO(random-liu): Remove this hack after deprecating unsupported log driver.
-		return kl.dockerLegacyService.GetContainerLogs(pod, containerID, logOptions, stdout, stderr)
+		return kl.dockerLegacyService.GetContainerLogs(ctx, pod, containerID, logOptions, stdout, stderr)
 	}
-	return kl.containerRuntime.GetContainerLogs(pod, containerID, logOptions, stdout, stderr)
+	return kl.containerRuntime.GetContainerLogs(ctx, pod, containerID, logOptions, stdout, stderr)
 }
 
 // getPhase returns the phase of a pod given its container info.

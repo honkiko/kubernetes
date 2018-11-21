@@ -75,7 +75,7 @@ func processLines(lines []string, logOptions *v1.PodLogOptions, stdout, stderr i
 // "100" or "all") to tail the log.
 //
 // TODO(yifan): This doesn't work with lkvm stage1 yet.
-func (r *Runtime) GetContainerLogs(pod *v1.Pod, containerID kubecontainer.ContainerID, logOptions *v1.PodLogOptions, stdout, stderr io.Writer) error {
+func (r *Runtime) GetContainerLogs(_ context.Context, pod *v1.Pod, containerID kubecontainer.ContainerID, logOptions *v1.PodLogOptions, stdout, stderr io.Writer) error {
 	id, err := parseContainerID(containerID)
 	if err != nil {
 		return err
