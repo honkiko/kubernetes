@@ -41,6 +41,17 @@ type HostportSyncer interface {
 	OpenPodHostportsAndSync(newPortMapping *PodPortMapping, natInterfaceName string, activePodPortMappings []*PodPortMapping) error
 }
 
+type noopHostportSyncer string
+func (h noopHostportSyncer) SyncHostports(natInterfaceName string, activePodPortMappings []*PodPortMapping) error {
+	return nil
+}
+	func (h noopHostportSyncer) OpenPodHostportsAndSync(newPortMapping *PodPortMapping, natInterfaceName string, activePodPortMappings []*PodPortMapping) error {
+	return nil
+}
+func NewNoopHostportSyncer(iptables utiliptables.Interface) HostportSyncer {
+	return noopHostportSyncer("noopHostportSyncer")
+}
+
 type hostportSyncer struct {
 	hostPortMap map[hostport]closeable
 	iptables    utiliptables.Interface

@@ -128,8 +128,8 @@ func NewPlugin(networkPluginDir string) network.NetworkPlugin {
 		iptables:          iptInterface,
 		sysctl:            sysctl,
 		vendorDir:         networkPluginDir,
-		hostportSyncer:    hostport.NewHostportSyncer(iptInterface),
-		hostportManager:   hostport.NewHostportManager(iptInterface),
+		hostportSyncer:    hostport.NewNoopHostportSyncer(iptInterface),
+		hostportManager:   hostport.NewNoopHostportManager(iptInterface),
 		nonMasqueradeCIDR: "10.0.0.0/8",
 	}
 }
@@ -181,9 +181,9 @@ func (plugin *kubenetNetworkPlugin) Init(host network.Host, hairpinMode kubeletc
 	}
 
 	// Need to SNAT outbound traffic from cluster
-	if err = plugin.ensureMasqRule(); err != nil {
-		return err
-	}
+	//if err = plugin.ensureMasqRule(); err != nil {
+	//	return err
+	//}
 	return nil
 }
 

@@ -42,6 +42,17 @@ type HostPortManager interface {
 	Remove(id string, podPortMapping *PodPortMapping) error
 }
 
+type noopHostportManager string
+func (hm noopHostportManager) Add(id string, podPortMapping *PodPortMapping, natInterfaceName string) (err error) {
+	return nil
+}
+func (hm noopHostportManager) Remove(id string, podPortMapping *PodPortMapping) (err error) {
+	return nil
+}
+func NewNoopHostportManager(iptables utiliptables.Interface) HostPortManager {
+	return noopHostportManager("noopHostportManager")
+}
+
 type hostportManager struct {
 	hostPortMap map[hostport]closeable
 	iptables    utiliptables.Interface
