@@ -567,9 +567,9 @@ func (plugin *kubenetNetworkPlugin) SetUpPod(namespace string, name string, id k
 	}
 
 	// Need to SNAT outbound traffic from cluster
-	if err := plugin.ensureMasqRule(); err != nil {
-		glog.Errorf("Failed to ensure MASQ rule: %v", err)
-	}
+	//if err := plugin.ensureMasqRule(); err != nil {
+	//	glog.Errorf("Failed to ensure MASQ rule: %v", err)
+	//}
 
 	return nil
 }
@@ -658,9 +658,9 @@ func (plugin *kubenetNetworkPlugin) TearDownPod(namespace string, name string, i
 	}
 
 	// Need to SNAT outbound traffic from cluster
-	if err := plugin.ensureMasqRule(); err != nil {
-		glog.Errorf("Failed to ensure MASQ rule: %v", err)
-	}
+	//if err := plugin.ensureMasqRule(); err != nil {
+	//	glog.Errorf("Failed to ensure MASQ rule: %v", err)
+	//}
 
 	return nil
 }
