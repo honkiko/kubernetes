@@ -266,6 +266,7 @@ go_test(
         "//vendor/k8s.io/metrics/pkg/apis/metrics/v1beta1:go_default_library",
         "//vendor/k8s.io/metrics/pkg/client/clientset_generated/clientset/fake:go_default_library",
         "//vendor/k8s.io/utils/exec:go_default_library",
+        "//vendor/github.com/stretchr/testify/require:go_default_library",
     ],
 )
 
