@@ -478,7 +478,9 @@ func (asw *actualStateOfWorld) SetVolumeGloballyMounted(
 
 	volumeObj.globallyMounted = globallyMounted
 	volumeObj.deviceMountPath = deviceMountPath
-	volumeObj.devicePath = devicePath
+	if devicePath != "" {
+		volumeObj.devicePath = devicePath
+	}
 	asw.attachedVolumes[volumeName] = volumeObj
 	return nil
 }
